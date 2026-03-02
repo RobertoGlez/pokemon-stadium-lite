@@ -1,0 +1,9 @@
+{
+    "name": "pokemon-stadium-lite",
+    "version:": "1.0.0",
+    "description": "monolith app",
+    "workspaces": [
+        "apps/server",
+        "apps/web"
+    ]
+}
