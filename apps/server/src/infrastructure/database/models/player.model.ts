@@ -1,10 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { Player } from '../../../domain/entities/player.entity';
 
-export interface IPlayer extends Document {
-    nickname: string;
-    socketId: string;
-    joinedLobbyAt: Date;
-}
+export interface IPlayerDocument extends Document, Omit<Player, 'id'> { }
 
 const PlayerSchema: Schema = new Schema({
     nickname: { type: String, required: true },
@@ -12,4 +9,4 @@ const PlayerSchema: Schema = new Schema({
     joinedLobbyAt: { type: Date, default: Date.now },
 });
 
-export const PlayerModel = mongoose.model<IPlayer>('Player', PlayerSchema);
+export const PlayerModel = mongoose.model<IPlayerDocument>('Player', PlayerSchema);

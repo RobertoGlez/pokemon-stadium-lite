@@ -2,6 +2,8 @@ import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { setupHealthRoutes } from '../../presentation/routes/health.routes';
 import { setupRootRoutes } from '../../presentation/routes/root.routes';
+import { Server } from 'socket.io';
+import { initializeLobbyGateway } from '../../presentation/gateways/lobby.gateway';
 
 export const buildServer = async (): Promise<FastifyInstance> => {
     const app = Fastify({
@@ -17,6 +19,19 @@ export const buildServer = async (): Promise<FastifyInstance> => {
     // Register routes
     setupHealthRoutes(app);
     setupRootRoutes(app);
+
+    app.ready(err => {
+        if (err) throw err;
+
+        const io = new Server(app.server, {
+            cors: {
+                origin: '*',
+                methods: ['GET', 'POST']
+            }
+        });
+
+        initializeLobbyGateway(io);
+    });
 
     return app;
 };

@@ -1,10 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { Lobby } from '../../../domain/entities/lobby.entity';
 
-export interface ILobby extends Document {
-    status: 'waiting' | 'ready' | 'battling' | 'finished';
-    players: string[]; // UUIDs or Mongo ObjectIds as strings
-    createdAt: Date;
-}
+export interface ILobbyDocument extends Document, Omit<Lobby, 'id'> { }
 
 const LobbySchema: Schema = new Schema({
     status: {
@@ -20,4 +17,4 @@ const LobbySchema: Schema = new Schema({
     createdAt: { type: Date, default: Date.now },
 });
 
-export const LobbyModel = mongoose.model<ILobby>('Lobby', LobbySchema);
+export const LobbyModel = mongoose.model<ILobbyDocument>('Lobby', LobbySchema);

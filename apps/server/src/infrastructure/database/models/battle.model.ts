@@ -1,29 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { BattleState } from '../../../domain/entities/battle.entity';
 
-interface PokemonStats {
-    maxHp: number;
-    currentHp: number;
-    attack: number;
-    defense: number;
-    speed: number;
-}
-
-interface PokemonState {
-    id: number;
-    name: string;
-    types: string[];
-    stats: PokemonStats;
-    spriteUrl: string;
-    isDefeated: boolean;
-}
-
-export interface IBattleState extends Document {
-    lobbyId: string;
-    teams: Map<string, PokemonState[]>;
-    activePokemonIndex: Map<string, number>;
-    currentTurnPlayerId: string | null;
-    winnerId: string | null;
-}
+export interface IBattleStateDocument extends Document, Omit<BattleState, 'id'> { }
 
 const PokemonStatsSchema = new Schema({
     maxHp: { type: Number, required: true },
@@ -58,4 +36,4 @@ const BattleSchema: Schema = new Schema({
     winnerId: { type: String, default: null }
 });
 
-export const BattleModel = mongoose.model<IBattleState>('Battle', BattleSchema);
+export const BattleModel = mongoose.model<IBattleStateDocument>('Battle', BattleSchema);

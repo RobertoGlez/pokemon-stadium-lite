@@ -7,7 +7,7 @@ Este documento es el índice principal del roadmap del proyecto. Las historias d
 | ID | Historia de Usuario | Estado |
 |---|---|---|
 | [B-US-01](./backend/B-US-01-server-setup.md) | Configuración del Servidor y Base de Datos | [x] DONE |
-| [B-US-02](./backend/B-US-02-pokemon-catalog.md) | Integración del Catálogo Pokémon Externo | [ ] TODO |
+| [B-US-02](./backend/B-US-02-pokemon-catalog.md) | Integración del Catálogo Pokémon Externo | [x] DONE |
 | [B-US-03](./backend/B-US-03-websocket-lobby.md) | WebSockets, Conexión y Salas (Lobby) | [ ] TODO |
 | [B-US-04](./backend/B-US-04-team-assignment.md) | Asignación de Equipos Aleatorios | [ ] TODO |
 | [B-US-05](./backend/B-US-05-ready-state.md) | Estado "Listo" y Comienzo de Batalla | [ ] TODO |
