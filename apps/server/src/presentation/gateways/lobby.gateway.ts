@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { JoinLobbyUseCase } from '../../application/use-cases/join-lobby.use-case';
 import { AssignPokemonUseCase } from '../../application/use-cases/assign-pokemon.use-case';
 import { ReadyPlayerUseCase } from '../../application/use-cases/ready-player.use-case';
+import { ProcessAttackUseCase } from '../../application/use-cases/process-attack.use-case';
 import { MongoLobbyRepository } from '../../infrastructure/database/repositories/mongo-lobby.repository';
 import { MongoPlayerRepository } from '../../infrastructure/database/repositories/mongo-player.repository';
 import { MongoBattleRepository } from '../../infrastructure/database/repositories/mongo-battle.repository';
@@ -16,6 +17,7 @@ export const initializeLobbyGateway = (io: Server) => {
     const joinLobbyUseCase = new JoinLobbyUseCase(lobbyRepo, playerRepo);
     const assignPokemonUseCase = new AssignPokemonUseCase(playerRepo, lobbyRepo, pokemonApiAdapter);
     const readyPlayerUseCase = new ReadyPlayerUseCase(playerRepo, lobbyRepo, battleRepo);
+    const processAttackUseCase = new ProcessAttackUseCase(playerRepo, lobbyRepo, battleRepo);
 
     const broadcastLobbyStatus = async (lobbyId: string) => {
         const lobby = await lobbyRepo.findById(lobbyId);
@@ -106,6 +108,26 @@ export const initializeLobbyGateway = (io: Server) => {
                 }
             } catch (error) {
                 console.error(`[Socket] Error in ready:`, error);
+            }
+        });
+
+        socket.on('attack', async () => {
+            try {
+                console.log(`[Socket] attack requested by ${socket.id}`);
+                const turnResult = await processAttackUseCase.execute(socket.id);
+
+                const turnResultPayload = {
+                    damage: turnResult.damage,
+                    remainingHp: turnResult.defenderRemainingHp,
+                    isDefeated: turnResult.isDefeated,
+                    nextTurnPlayerId: turnResult.battleState.currentTurnPlayerId
+                };
+
+                io.to(turnResult.battleState.lobbyId).emit('turn_result', turnResultPayload);
+                console.log(`[Socket] Emitted turn_result to room ${turnResult.battleState.lobbyId}:`, JSON.stringify(turnResultPayload));
+            } catch (error) {
+                // Silently log out of turn attacks or invalid actions
+                console.error(`[Socket] Attack rejected for ${socket.id}: ${(error as Error).message}`);
             }
         });
     });

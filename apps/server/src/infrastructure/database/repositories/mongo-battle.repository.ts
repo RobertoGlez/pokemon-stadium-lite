@@ -15,7 +15,18 @@ export class MongoBattleRepository implements BattleRepository {
     }
 
     async update(id: string, updates: Partial<BattleState>): Promise<BattleState | null> {
-        const updated = await BattleModel.findByIdAndUpdate(id, updates, { new: true });
+        // Mongoose requires Map types to be plain objects when using $set, or we can use the document .set() method
+        // But since we use findByIdAndUpdate, we should convert ES6 Maps to objects for Mongoose to handle them smoothly
+        const updateDoc: any = { ...updates };
+
+        if (updates.teams instanceof Map) {
+            updateDoc.teams = Object.fromEntries(updates.teams);
+        }
+        if (updates.activePokemonIndex instanceof Map) {
+            updateDoc.activePokemonIndex = Object.fromEntries(updates.activePokemonIndex);
+        }
+
+        const updated = await BattleModel.findByIdAndUpdate(id, { $set: updateDoc }, { new: true });
         if (!updated) return null;
         return this.mapToEntity(updated);
     }
