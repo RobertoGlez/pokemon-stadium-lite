@@ -1,13 +1,41 @@
 import { Server, Socket } from 'socket.io';
 import { JoinLobbyUseCase } from '../../application/use-cases/join-lobby.use-case';
+import { AssignPokemonUseCase } from '../../application/use-cases/assign-pokemon.use-case';
 import { MongoLobbyRepository } from '../../infrastructure/database/repositories/mongo-lobby.repository';
 import { MongoPlayerRepository } from '../../infrastructure/database/repositories/mongo-player.repository';
+import { PokemonApiAdapter } from '../../infrastructure/http/adapters/pokemon-api.adapter';
 
 export const initializeLobbyGateway = (io: Server) => {
     // Instantiate use case dependencies locally
     const lobbyRepo = new MongoLobbyRepository();
     const playerRepo = new MongoPlayerRepository();
+    const pokemonApiAdapter = new PokemonApiAdapter();
     const joinLobbyUseCase = new JoinLobbyUseCase(lobbyRepo, playerRepo);
+    const assignPokemonUseCase = new AssignPokemonUseCase(playerRepo, lobbyRepo, pokemonApiAdapter);
+
+    const broadcastLobbyStatus = async (lobbyId: string) => {
+        const lobby = await lobbyRepo.findById(lobbyId);
+        if (!lobby) return;
+
+        const playersData = [];
+        for (const playerId of lobby.players) {
+            const p = await playerRepo.findById(playerId);
+            if (p) {
+                playersData.push({
+                    nickname: p.nickname,
+                    team: p.team ? p.team.map(poke => poke.name) : []
+                });
+            }
+        }
+
+        const lobbyStatusResponse = {
+            status: lobby.status,
+            players: playersData
+        };
+
+        io.to(lobbyId).emit('lobby_status', lobbyStatusResponse);
+        console.log(`[Socket] Emitted lobby_status to room ${lobbyId}:`, JSON.stringify(lobbyStatusResponse));
+    };
 
     io.on('connection', (socket: Socket) => {
         console.log(`[Socket] New connection: ${socket.id}`);
@@ -15,47 +43,37 @@ export const initializeLobbyGateway = (io: Server) => {
         socket.on('join_lobby', async (nickname: string) => {
             try {
                 if (!nickname || nickname.trim() === '') {
-                    // Send error or ignore
                     console.log(`[Socket] join_lobby without nickname from ${socket.id}`);
                     return;
                 }
 
                 console.log(`[Socket] Player ${nickname} joining lobby...`);
 
-                const { lobby, player } = await joinLobbyUseCase.execute(nickname, socket.id);
-
-                // Join the Socket.IO room named after the lobby's ID
+                const { lobby } = await joinLobbyUseCase.execute(nickname, socket.id);
                 socket.join(lobby.id!);
 
-                // According to B-US-03, we need to return status: waiting and the array of players containing our name.
-                // Note: lobby.players currently holds UUIDs. But business requirements just state "array of players conteniendo nuestro nombre".
-                // We should probably map players to their nicknames.
-                // Let's resolve the player nicknames
-                const playerNicknames: string[] = [];
-                for (const playerId of lobby.players) {
-                    const p = await playerRepo.findById(playerId);
-                    if (p) {
-                        playerNicknames.push(p.nickname);
-                    }
-                }
-
-                const lobbyStatusResponse = {
-                    status: lobby.status,
-                    players: playerNicknames
-                };
-
-                // Broadcast to all clients in the room
-                io.to(lobby.id!).emit('lobby_status', lobbyStatusResponse);
-
-                console.log(`[Socket] Emitted lobby_status to room ${lobby.id!}:`, lobbyStatusResponse);
+                await broadcastLobbyStatus(lobby.id!);
             } catch (error) {
                 console.error(`[Socket] Error in join_lobby:`, error);
             }
         });
 
+        socket.on('assign_pokemon', async () => {
+            try {
+                console.log(`[Socket] assign_pokemon requested by ${socket.id}`);
+                const player = await assignPokemonUseCase.execute(socket.id);
+
+                const lobby = await lobbyRepo.findByPlayerId(player.id!);
+                if (lobby) {
+                    await broadcastLobbyStatus(lobby.id!);
+                }
+            } catch (error) {
+                console.error(`[Socket] Error in assign_pokemon:`, error);
+            }
+        });
+
         socket.on('disconnect', async () => {
             console.log(`[Socket] Disconnected: ${socket.id}`);
-            // Later we should handle player leaving lobby, etc. Not covered in B-US-03.
             await playerRepo.deleteBySocketId(socket.id);
         });
     });

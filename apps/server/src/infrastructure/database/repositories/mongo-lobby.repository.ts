@@ -15,7 +15,17 @@ export class MongoLobbyRepository implements LobbyRepository {
     }
 
     async findWaitingLobby(): Promise<Lobby | null> {
-        const doc = await LobbyModel.findOne({ status: 'waiting' });
+        // Find a lobby that is 'waiting' and has less than 2 players
+        const doc = await LobbyModel.findOne({
+            status: 'waiting',
+            $expr: { $lt: [{ $size: "$players" }, 2] }
+        });
+        if (!doc) return null;
+        return this.mapToEntity(doc);
+    }
+
+    async findByPlayerId(playerId: string): Promise<Lobby | null> {
+        const doc = await LobbyModel.findOne({ players: playerId });
         if (!doc) return null;
         return this.mapToEntity(doc);
     }

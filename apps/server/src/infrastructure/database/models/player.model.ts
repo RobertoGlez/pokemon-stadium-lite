@@ -7,6 +7,7 @@ const PlayerSchema: Schema = new Schema({
     nickname: { type: String, required: true },
     socketId: { type: String, required: true },
     joinedLobbyAt: { type: Date, default: Date.now },
+    team: { type: Array, default: [] }
 });
 
 export const PlayerModel = mongoose.model<IPlayerDocument>('Player', PlayerSchema);

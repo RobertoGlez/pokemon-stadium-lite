@@ -6,8 +6,8 @@ export class PokemonApiAdapter implements IPokemonCatalogRepository {
     private readonly baseUrl = 'https://pokemon-api-92034153384.us-central1.run.app';
 
     async getPokemonList(): Promise<PokemonCatalogListItem[]> {
-        const response = await axios.get<PokemonCatalogListItem[]>(`${this.baseUrl}/list`);
-        return response.data;
+        const response = await axios.get<any>(`${this.baseUrl}/list`);
+        return response.data?.data || response.data || [];
     }
 
     async getPokemonDetails(id: number): Promise<PokemonBase> {
