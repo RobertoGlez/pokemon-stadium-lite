@@ -4,12 +4,15 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "compile": "tsc",
+    "start": "node dist/index.js",
+    "deploy": "npm run compile && node scripts/deploy.mjs"
   },
   "dependencies": {
+    "@fastify/cors": "^8.5.0",
     "dotenv": "^16.4.5",
-    "fastify": "^4.26.2"
+    "fastify": "^4.26.2",
+    "mongoose": "^9.2.3"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",

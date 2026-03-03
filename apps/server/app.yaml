@@ -1,0 +1,15 @@
+runtime: nodejs20
+env: standard
+instance_class: F1
+
+# Especifica cómo el entorno de Node.js iniciará el servidor (opcional si ya es npm start)
+entrypoint: npm start
+
+# Archivo de variables separadas (ignorado por Git)
+includes:
+  - env_variables.yaml
+
+handlers:
+  - url: /.*
+    script: auto
+    secure: always

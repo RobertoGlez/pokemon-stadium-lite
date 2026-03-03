@@ -6,11 +6,15 @@ This directory (`.context/spec/`) contains the optimized, Spec-Driven Design (SD
 By reading the files in this directory, the AI will understand the domain boundaries, the required system events, and the strict rules governing the match flow. This context acts as the definitive source of truth across all architectural levels.
 
 ## Specification Map
-1. **[Business Requirements](./business_requirements.md)**: Details the rules of the game, algorithms (like damage formulas), and the lifecycle of a match.
-2. **[Technical Requirements](./technical_requirements.md)**: Outlines the infrastructure constraints, the specific tech stack (Node.js + Flutter/React), and architectural standards (Clean Architecture).
-3. **[Domain Models](./domain_models.md)**: Contains the JSON-like entity definitions for Player, Pokemon, Lobby, and Battle statuses.
-4. **[System Events](./system_events.md)**: Mappable payloads for Real-time WebSockets communication, including parameters and expected behaviors.
-5. **[OpenAPI Contracts](./openapi.yaml)**: HTTP REST contracts for health checks and initialization.
+
+| Spec File | Purpose |
+| :--- | :--- |
+| [`business_requirements.md`](./business_requirements.md) | Core logic, rules, and restrictions describing the battle engine and behavior. |
+| [`frontend_technical_requirements.md`](./frontend_technical_requirements.md) | Stack choices, constraints, network bindings, UI/UX specs for Web and Mobile. |
+| [`backend_technical_requirements.md`](./backend_technical_requirements.md) | Stack choices, constraints, deployment rules, and architecture for the Node.js server. |
+| [`domain_models.md`](./domain_models.md) | Data dictionary mapping interfaces for core system entities across layers. |
+| [`system_events.md`](./system_events.md) | Socket communication contracts spanning expected message payloads for real-time multiplayer. |
+| [`openapi.yaml`](./openapi.yaml) | REST API contracts defining static configuration HTTP endpoints for initial connection. |
 
 ## AI Implementation Directives
 - **Architecture**: Always scaffold backend services using standard Clean Architecture patterns. Ensure logic spans clearly defined `domain/`, `application/`, `infrastructure/`, and `presentation/` interfaces.
