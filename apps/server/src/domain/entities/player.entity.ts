@@ -6,4 +6,5 @@ export interface Player {
     socketId: string;
     joinedLobbyAt: Date;
     team?: PokemonBase[]; // Team assigned to the player
+    isReady?: boolean; // Indicates if the player is ready for battle
 }

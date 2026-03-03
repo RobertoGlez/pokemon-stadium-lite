@@ -1,17 +1,21 @@
 import { Server, Socket } from 'socket.io';
 import { JoinLobbyUseCase } from '../../application/use-cases/join-lobby.use-case';
 import { AssignPokemonUseCase } from '../../application/use-cases/assign-pokemon.use-case';
+import { ReadyPlayerUseCase } from '../../application/use-cases/ready-player.use-case';
 import { MongoLobbyRepository } from '../../infrastructure/database/repositories/mongo-lobby.repository';
 import { MongoPlayerRepository } from '../../infrastructure/database/repositories/mongo-player.repository';
+import { MongoBattleRepository } from '../../infrastructure/database/repositories/mongo-battle.repository';
 import { PokemonApiAdapter } from '../../infrastructure/http/adapters/pokemon-api.adapter';
 
 export const initializeLobbyGateway = (io: Server) => {
     // Instantiate use case dependencies locally
     const lobbyRepo = new MongoLobbyRepository();
     const playerRepo = new MongoPlayerRepository();
+    const battleRepo = new MongoBattleRepository();
     const pokemonApiAdapter = new PokemonApiAdapter();
     const joinLobbyUseCase = new JoinLobbyUseCase(lobbyRepo, playerRepo);
     const assignPokemonUseCase = new AssignPokemonUseCase(playerRepo, lobbyRepo, pokemonApiAdapter);
+    const readyPlayerUseCase = new ReadyPlayerUseCase(playerRepo, lobbyRepo, battleRepo);
 
     const broadcastLobbyStatus = async (lobbyId: string) => {
         const lobby = await lobbyRepo.findById(lobbyId);
@@ -23,7 +27,8 @@ export const initializeLobbyGateway = (io: Server) => {
             if (p) {
                 playersData.push({
                     nickname: p.nickname,
-                    team: p.team ? p.team.map(poke => poke.name) : []
+                    team: p.team ? p.team.map(poke => poke.name) : [],
+                    isReady: p.isReady || false
                 });
             }
         }
@@ -75,6 +80,33 @@ export const initializeLobbyGateway = (io: Server) => {
         socket.on('disconnect', async () => {
             console.log(`[Socket] Disconnected: ${socket.id}`);
             await playerRepo.deleteBySocketId(socket.id);
+        });
+
+        socket.on('ready', async () => {
+            try {
+                console.log(`[Socket] ready requested by ${socket.id}`);
+                const { battleStarted, battleState } = await readyPlayerUseCase.execute(socket.id);
+
+                if (battleStarted && battleState) {
+                    // Emit battle_start with currentTurnPlayerId
+                    const battleStartPayload = {
+                        currentTurnPlayerId: battleState.currentTurnPlayerId
+                    };
+                    io.to(battleState.lobbyId).emit('battle_start', battleStartPayload);
+                    console.log(`[Socket] Emitted battle_start to room ${battleState.lobbyId}:`, JSON.stringify(battleStartPayload));
+                } else {
+                    // Find lobby to broadcast updated status (maybe one player is ready)
+                    const player = await playerRepo.findBySocketId(socket.id);
+                    if (player) {
+                        const lobby = await lobbyRepo.findByPlayerId(player.id!);
+                        if (lobby) {
+                            await broadcastLobbyStatus(lobby.id!);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`[Socket] Error in ready:`, error);
+            }
         });
     });
 };

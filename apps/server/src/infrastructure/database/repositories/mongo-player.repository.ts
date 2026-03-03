@@ -36,7 +36,8 @@ export class MongoPlayerRepository implements PlayerRepository {
             nickname: doc.nickname,
             socketId: doc.socketId,
             joinedLobbyAt: doc.joinedLobbyAt,
-            team: doc.team || []
+            team: doc.team || [],
+            isReady: doc.isReady || false
         };
     }
 }
