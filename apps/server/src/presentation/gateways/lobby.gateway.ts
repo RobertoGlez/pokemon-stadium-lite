@@ -120,6 +120,8 @@ export const initializeLobbyGateway = (io: Server) => {
                     damage: turnResult.damage,
                     remainingHp: turnResult.defenderRemainingHp,
                     isDefeated: turnResult.isDefeated,
+                    pokemonFainted: turnResult.pokemonFainted,
+                    nextDefenderPokemon: turnResult.nextDefenderPokemon,
                     nextTurnPlayerId: turnResult.battleState.currentTurnPlayerId
                 };
 

@@ -2,6 +2,7 @@ import { PlayerRepository } from '../../domain/repositories/player.repository';
 import { BattleRepository } from '../../domain/repositories/battle.repository';
 import { LobbyRepository } from '../../domain/repositories/lobby.repository';
 import { BattleState } from '../../domain/entities/battle.entity';
+import { PokemonBase } from '../../domain/entities/pokemon.entity';
 
 export interface TurnResult {
     attackerId: string;
@@ -9,6 +10,8 @@ export interface TurnResult {
     damage: number;
     defenderRemainingHp: number;
     isDefeated: boolean;
+    pokemonFainted?: boolean;
+    nextDefenderPokemon?: PokemonBase;
     battleState: BattleState;
 }
 
@@ -82,20 +85,33 @@ export class ProcessAttackUseCase {
 
         // 9. Check defeat condition
         let isDefeated = false;
+        let pokemonFainted = false;
+        let nextDefenderPokemon: PokemonBase | undefined = undefined;
+
         if (defenderPokemon.stats.currentHp === 0) {
             defenderPokemon.isDefeated = true;
             isDefeated = true;
+            pokemonFainted = true;
+
+            // T2: Find next Pokémon in the list that has isDefeated == false
+            const nextIndex = defenderTeam.findIndex((p, i) => i !== activeDefenderIndex && !p.isDefeated);
+            if (nextIndex !== -1) {
+                // T3: Assign new index to the ActivePokemonTracker in the DB
+                battle.activePokemonIndex.set(defenderId, nextIndex);
+                nextDefenderPokemon = defenderTeam[nextIndex];
+            }
         }
 
         // 10. Change turn
         battle.currentTurnPlayerId = defenderId;
 
-        // Update arrays in the map so Mongoose detects changes correctly
+        // Update the defender's team in the map so Mongoose detects changes correctly
         battle.teams.set(defenderId, defenderTeam);
 
-        // 11. Save
+        // 11. Save — always persist activePokemonIndex so the swap is durable
         const updatedBattle = await this.battleRepository.update(battle.id, {
             teams: battle.teams,
+            activePokemonIndex: battle.activePokemonIndex,
             currentTurnPlayerId: battle.currentTurnPlayerId
         });
 
@@ -109,6 +125,8 @@ export class ProcessAttackUseCase {
             damage,
             defenderRemainingHp: defenderPokemon.stats.currentHp,
             isDefeated,
+            pokemonFainted,
+            nextDefenderPokemon,
             battleState: updatedBattle
         };
     }
