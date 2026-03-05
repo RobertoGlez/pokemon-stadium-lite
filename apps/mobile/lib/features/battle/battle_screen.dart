@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/lobby_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/pokemon.dart';
+import '../../core/models/player.dart'; // Added for LobbyStatus
 import 'components/hp_bar.dart';
 
 class BattleScreen extends StatefulWidget {
@@ -114,13 +115,13 @@ class _BattleScreenState extends State<BattleScreen> {
 
   Widget _buildPokemonArenaSide(PokemonBase pokemon, String trainerName, {required bool isOpponent}) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
       child: Column(
         mainAxisAlignment: isOpponent ? MainAxisAlignment.start : MainAxisAlignment.end,
         children: [
           if (isOpponent) ...[
              _trainerInfo(trainerName, isOpponent),
-             const SizedBox(height: 12),
+             const SizedBox(height: 8),
              HpBar(
                percentage: pokemon.stats.hpPercentage,
                label: '${pokemon.stats.currentHp}/${pokemon.stats.maxHp}',
@@ -135,7 +136,7 @@ class _BattleScreenState extends State<BattleScreen> {
             duration: const Duration(seconds: 1),
             builder: (context, double value, child) {
               return Transform.scale(
-                scale: 0.8 + (value * 0.2),
+                scale: 0.8 + (value * 0.2), // Slightly smaller scale
                 child: Opacity(
                   opacity: value,
                   child: child,
@@ -143,12 +144,12 @@ class _BattleScreenState extends State<BattleScreen> {
               );
             },
             child: SizedBox(
-              height: 150,
-              width: 150,
+              height: 120, // Reduced from 150
+              width: 120,
               child: Image.network(
                 pokemon.spriteUrl,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.help, size: 80),
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.help, size: 60),
               ),
             ),
           ),
@@ -206,7 +207,7 @@ class _BattleScreenState extends State<BattleScreen> {
               ),
               child: Text(
                 isMyTurn ? '¡ATACAR!' : 'ESPERANDO RIVAL...',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.black, letterSpacing: 2),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2),
               ),
             ),
           ],

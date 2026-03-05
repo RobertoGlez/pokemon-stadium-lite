@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLobby } from '../../../core/context/LobbyContext';
 import { Swords, Zap, Shield, ChevronRight, Clock } from 'lucide-react';
-import { VictoryScreen } from './VictoryScreen';
+// Removed VictoryScreen import from here as it's now a route
 
 const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -115,6 +115,16 @@ export function BattleArena() {
 
         return () => clearTimeout(timer);
     }, [lastDamageEvent]);
+
+    // Handle game finished transition
+    useEffect(() => {
+        if (lobbyStatus === 'finished') {
+            const timer = setTimeout(() => {
+                navigate('/results');
+            }, 2000); // Small delay to see last action results
+            return () => clearTimeout(timer);
+        }
+    }, [lobbyStatus, navigate]);
 
     if (!isConnected || (lobbyStatus !== 'battling' && lobbyStatus !== 'finished')) return null;
 
@@ -389,9 +399,6 @@ export function BattleArena() {
                     </div>
                 </div>
             </div>
-
-            {/* Victory/Defeat Modal */}
-            {lobbyStatus === 'finished' && <VictoryScreen />}
         </div>
     );
 }

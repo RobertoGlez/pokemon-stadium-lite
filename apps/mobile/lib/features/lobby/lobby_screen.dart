@@ -62,7 +62,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(12), // Reduced padding
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -70,21 +70,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   Row(
                     children: [
                       _playerInfoTile(localPlayer, isLocal: true),
-                      const SizedBox(width: 12),
-                      const Text('VS', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
+                      const Text('VS', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontSize: 10)),
+                      const SizedBox(width: 8),
                       _playerInfoTile(opponent, isLocal: false),
                     ],
                   ),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   
                   // Team Section
                   const Text(
                     'TU EQUIPO ASIGNADO',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   
                   if (lobby.isRequestingTeam)
                     const Center(child: Padding(
@@ -97,9 +97,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.85,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 1.55, // Much higher = much shorter cards
                       ),
                       itemCount: localPlayer.team!.length,
                       itemBuilder: (context, index) {
@@ -109,7 +109,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   else
                     const Center(child: Text('Esperando asignación de equipo...')),
                   
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -141,7 +141,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       onPressed: (localPlayer?.team != null && localPlayer!.team!.isNotEmpty)
                           ? () => lobby.emitReady()
                           : null,
-                      style: ElevatedButton.styleFrom(height: 56),
+                      style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
                       child: const Text('ESTOY LISTO'),
                     ),
             ),

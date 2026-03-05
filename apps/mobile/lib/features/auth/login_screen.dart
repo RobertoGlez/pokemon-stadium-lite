@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _urlController.text = 'http://localhost:8080'; // Default
+    _urlController.text = 'http://127.0.0.1:8080'; // Default
   }
 
   @override

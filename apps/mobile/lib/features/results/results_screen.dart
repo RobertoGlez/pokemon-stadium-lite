@@ -75,7 +75,7 @@ class ResultsScreen extends StatelessWidget {
                     isWinner ? '¡VICTORIA!' : 'FIN DEL JUEGO',
                     style: TextStyle(
                       fontSize: 40,
-                      fontWeight: FontWeight.black,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: 2.0,
                       color: isWinner ? AppColors.success : AppColors.textPrimary,
                     ),
