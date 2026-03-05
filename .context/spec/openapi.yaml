@@ -1,0 +1,120 @@
+openapi: 3.0.3
+info:
+  title: Pokémon Stadium Lite API
+  version: 1.0.0
+  description: API specifications for the Pokémon Stadium Lite backend. This document defines the HTTP REST contracts for fetching configuration or any other static initialization endpoints. Note that real-time battle interactions are handled via WebSockets, and their specs are defined in `system_events.md`.
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: http://{host}:{port}
+    description: Dynamic configuration server
+    variables:
+      host:
+        default: 192.168.0.x
+        description: IP Address of the host machine
+      port:
+        default: "8080"
+        description: Assigned port for the API
+
+paths:
+  /:
+    get:
+      summary: Server configuration & connection info
+      description: Root endpoint that the frontend applications hit to test the connection and retrieve server details upon initial launch or configuration URL input.
+      operationId: getServerInfo
+      tags:
+        - System
+      responses:
+        '200':
+          description: Successfully connected to the backend server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerInfoResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/health:
+    get:
+      summary: Health check endpoint
+      description: Verifies if the backend server is running and available before a client attempts a WebSocket connection.
+      operationId: checkHealth
+      tags:
+        - System
+      responses:
+        '200':
+          description: Server is healthy and ready to accept connections.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Internal server error indicating the service is down or degraded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ServerInfoResponse:
+      type: object
+      properties:
+        serverName:
+          type: string
+          example: "ps3-lite-backend-prod"
+          description: The name of the server instance (retrieved from environment variables).
+        packageName:
+          type: string
+          example: "pokemon-stadium-lite-server"
+          description: The project name (retrieved from package.json).
+        version:
+          type: string
+          example: "1.0.0"
+          description: The current version of the project (retrieved from package.json).
+        region:
+          type: string
+          example: "us-central1"
+          description: The deployment region or zone of the currently running server.
+        status:
+          type: string
+          example: "online"
+          description: A status node confirming everything is running smoothly.
+      required:
+        - serverName
+        - packageName
+        - version
+        - region
+        - status
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+          description: Overall health status.
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server UTC time.
+      required:
+        - status
+        - timestamp
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Internal Server Error"
+        message:
+          type: string
+          example: "An unexpected error occurred while processing your request."
+      required:
+        - error
+        - message
