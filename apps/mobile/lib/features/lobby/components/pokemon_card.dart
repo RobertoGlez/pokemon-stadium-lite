@@ -15,65 +15,73 @@ class PokemonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+        child: Row(
           children: [
-            // Sprite Image
+            // Sprite
             SizedBox(
-              height: isLarge ? 120 : 80,
-              width: isLarge ? 120 : 80,
+              height: isLarge ? 72 : 52,
+              width: isLarge ? 72 : 52,
               child: pokemon.spriteUrl.isNotEmpty
                   ? Image.network(
                       pokemon.spriteUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.help_outline, size: 40),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.help_outline, size: 20),
                     )
-                  : const Icon(Icons.pets, size: 40, color: AppColors.textSecondary),
+                  : const Icon(Icons.pets, size: 20, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 12),
-            
-            // Name
-            Text(
-              pokemon.name.toUpperCase(),
-              style: TextStyle(
-                fontSize: isLarge ? 18 : 14,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+            const SizedBox(width: 8),
+            // Info
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pokemon.name.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: isLarge ? 13 : 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  // Types
+                  Wrap(
+                    spacing: 3,
+                    runSpacing: 1,
+                    children: pokemon.types.map((type) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.arenaBlue.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(3),
+                        border: Border.all(color: AppColors.arenaBlue.withOpacity(0.15)),
+                      ),
+                      child: Text(
+                        type.toUpperCase(),
+                        style: const TextStyle(fontSize: 6, color: AppColors.arenaBlue, fontWeight: FontWeight.black),
+                      ),
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 4),
+                  // Stats
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      _statItem('HP', pokemon.stats.currentHp.toString()),
+                      const SizedBox(width: 8),
+                      _statItem('ATK', pokemon.stats.attack.toString()),
+                      const SizedBox(width: 8),
+                      _statItem('DEF', pokemon.stats.defense.toString()),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 4),
-            
-            // Types
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: pokemon.types.map((type) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.arenaBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: AppColors.arenaBlue.withOpacity(0.3)),
-                ),
-                child: Text(
-                  type,
-                  style: const TextStyle(fontSize: 10, color: AppColors.arenaBlue, fontWeight: FontWeight.bold),
-                ),
-              )).toList(),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Stats (Simplified for card view)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _statItem('HP', pokemon.stats.currentHp.toString()),
-                _statItem('ATK', pokemon.stats.attack.toString()),
-                _statItem('DEF', pokemon.stats.defense.toString()),
-              ],
             ),
           ],
         ),
@@ -83,14 +91,15 @@ class PokemonCard extends StatelessWidget {
 
   Widget _statItem(String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 7, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
         ),
         Text(
           value,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
         ),
       ],
     );

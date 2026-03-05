@@ -21,7 +21,7 @@ class SocketClient {
     _logger.i('Connecting to Socket server at: $url');
 
     _socket = io.io(url, io.OptionBuilder()
-      .setTransports(['websocket', 'polling'])
+      .setTransports(['websocket']) // Use websocket only for stability on web/mobile
       .enableAutoConnect()
       .build());
 

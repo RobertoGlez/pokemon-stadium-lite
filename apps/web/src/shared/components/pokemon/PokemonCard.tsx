@@ -50,39 +50,39 @@ export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) 
         : '';
 
     return (
-        <div className={`flex flex-col items-center bg-[#0B0F19] border border-[#1E293B] rounded-[24px] ${compact ? 'p-3 w-full min-w-0' : 'p-5 w-56 min-w-56'} shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(37,99,235,0.2)] hover:border-primary/50 ${isDefeated ? 'grayscale opacity-60 border-destructive/20 bg-destructive/5' : ''}`}>
+        <div className={`flex flex-col items-center bg-[#0B0F19] border border-[#1E293B] rounded-[20px] ${compact ? 'p-2 w-full min-w-0' : 'p-4 w-48 min-w-48'} shadow-lg relative overflow-hidden group transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:border-primary/40 ${isDefeated ? 'grayscale opacity-60 border-destructive/10 bg-destructive/5' : ''}`}>
 
             {/* Pokedex Number */}
-            <div className="absolute top-4 left-5 text-sm font-black text-slate-700/50 tracking-wider">
+            <div className="absolute top-3 left-4 text-[10px] font-black text-slate-700/40 tracking-wider">
                 {dexNumber}
             </div>
 
             {/* Magic UI Hover Beam Animation */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-[24px]">
-                <BorderBeam size={160} duration={8} delay={0} colorFrom="#2563EB" colorTo="#3b82f6" borderWidth={2} />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-[20px]">
+                <BorderBeam size={120} duration={8} delay={0} colorFrom="#2563EB" colorTo="#3b82f6" borderWidth={1.5} />
             </div>
 
             {/* Sprite Canvas */}
-            <div className={`${compact ? 'w-24 h-24 my-1' : 'w-32 h-32 my-4'} relative flex items-center justify-center`}>
+            <div className={`${compact ? 'w-20 h-20 my-0.5' : 'w-28 h-28 my-3'} relative flex items-center justify-center`}>
                 <img
                     src={spriteUrl}
                     alt={pokemon.name}
-                    className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 scale-110 group-hover:scale-[1.25] transition-transform duration-500"
+                    className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)] relative z-10 scale-105 group-hover:scale-115 transition-transform duration-500"
                 />
             </div>
 
             {/* Details Section */}
-            <div className={`w-full text-center ${compact ? 'mb-2' : 'mb-6'} relative z-10`}>
-                <h3 className={`font-black text-white ${compact ? 'text-lg' : 'text-2xl'} truncate capitalize tracking-tight ${compact ? 'mb-1.5' : 'mb-3'}`}>
+            <div className={`w-full text-center ${compact ? 'mb-1.5' : 'mb-4'} relative z-10`}>
+                <h3 className={`font-black text-white ${compact ? 'text-base' : 'text-xl'} truncate capitalize tracking-tight ${compact ? 'mb-1' : 'mb-2'}`}>
                     {pokemon.name}
                 </h3>
 
                 {/* Type Badges */}
-                <div className="flex gap-2 justify-center flex-wrap">
+                <div className="flex gap-1.5 justify-center flex-wrap">
                     {types.map((type: string) => (
                         <span
                             key={type}
-                            className={`px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border transition-all duration-300 bg-[#0F172A] cursor-default ${getTypeColorClasses(type)}`}
+                            className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all duration-300 bg-[#0F172A] cursor-default ${getTypeColorClasses(type)}`}
                         >
                             {type}
                         </span>
@@ -91,41 +91,41 @@ export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) 
             </div>
 
             {/* Stats Grid */}
-            <div className={`grid grid-cols-2 gap-2 w-full mt-auto relative z-10 ${compact ? 'text-xs' : ''}`}>
+            <div className={`grid grid-cols-2 gap-1.5 w-full mt-auto relative z-10 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
                 {/* HP Badge */}
-                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-green-500/20 transition-all`}>
-                    <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Heart className="w-3.5 h-3.5 text-green-500 group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-                        <span className="text-[10px] font-bold text-slate-400">PS</span>
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-green-500/10 transition-all`}>
+                    <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <Heart className="w-3 h-3 text-green-500" />
+                        <span className="font-bold text-slate-400">PS</span>
                     </div>
-                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-green-400`}>{maxHp}</span>
+                    <span className="font-black text-green-400">{maxHp}</span>
                 </div>
 
                 {/* Attack Badge */}
-                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-red-500/20 transition-all`}>
-                    <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Sword className="w-3.5 h-3.5 text-red-500 group-hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                        <span className="text-[10px] font-bold text-slate-400">ATQ</span>
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-red-500/10 transition-all`}>
+                    <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <Sword className="w-3 h-3 text-red-500" />
+                        <span className="font-bold text-slate-400">ATQ</span>
                     </div>
-                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-red-400`}>{attack}</span>
+                    <span className="font-black text-red-400">{attack}</span>
                 </div>
 
                 {/* Defense Badge */}
-                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-blue-500/20 transition-all`}>
-                    <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Shield className="w-3.5 h-3.5 text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                        <span className="text-[10px] font-bold text-slate-400">DEF</span>
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-blue-500/10 transition-all`}>
+                    <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <Shield className="w-3 h-3 text-blue-500" />
+                        <span className="font-bold text-slate-400">DEF</span>
                     </div>
-                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-blue-400`}>{defense}</span>
+                    <span className="font-black text-blue-400">{defense}</span>
                 </div>
 
                 {/* Speed Badge */}
-                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-yellow-400/20 transition-all`}>
-                    <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Zap className="w-3.5 h-3.5 text-yellow-400 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
-                        <span className="text-[10px] font-bold text-slate-400">VEL</span>
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-yellow-400/10 transition-all`}>
+                    <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <Zap className="w-3 h-3 text-yellow-400" />
+                        <span className="font-bold text-slate-400">VEL</span>
                     </div>
-                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-yellow-400`}>{speed}</span>
+                    <span className="font-black text-yellow-400">{speed}</span>
                 </div>
             </div>
 
