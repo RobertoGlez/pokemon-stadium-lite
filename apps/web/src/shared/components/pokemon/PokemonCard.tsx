@@ -4,6 +4,8 @@ import { BorderBeam } from '../magicui/border-beam';
 
 interface PokemonCardProps {
     pokemon: PokemonBase;
+    compact?: boolean;
+    isDefeated?: boolean;
 }
 
 const getTypeColorClasses = (type: string) => {
@@ -31,7 +33,7 @@ const getTypeColorClasses = (type: string) => {
     }
 };
 
-export function PokemonCard({ pokemon }: PokemonCardProps) {
+export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) {
     // Backend payload resiliency (handling both mapped and raw API payloads)
     const types = (pokemon as any).types || (pokemon as any).type || [];
     const spriteUrl = pokemon.spriteUrl || (pokemon as any).sprite || '';
@@ -48,7 +50,7 @@ export function PokemonCard({ pokemon }: PokemonCardProps) {
         : '';
 
     return (
-        <div className="flex flex-col items-center bg-[#0B0F19] border border-[#1E293B] rounded-[24px] p-5 w-56 min-w-56 shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(37,99,235,0.2)] hover:border-primary/50">
+        <div className={`flex flex-col items-center bg-[#0B0F19] border border-[#1E293B] rounded-[24px] ${compact ? 'p-3 w-full min-w-0' : 'p-5 w-56 min-w-56'} shadow-[0_4px_20px_rgba(0,0,0,0.5)] relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(37,99,235,0.2)] hover:border-primary/50 ${isDefeated ? 'grayscale opacity-60 border-destructive/20 bg-destructive/5' : ''}`}>
 
             {/* Pokedex Number */}
             <div className="absolute top-4 left-5 text-sm font-black text-slate-700/50 tracking-wider">
@@ -61,7 +63,7 @@ export function PokemonCard({ pokemon }: PokemonCardProps) {
             </div>
 
             {/* Sprite Canvas */}
-            <div className="w-32 h-32 my-4 relative flex items-center justify-center">
+            <div className={`${compact ? 'w-24 h-24 my-1' : 'w-32 h-32 my-4'} relative flex items-center justify-center`}>
                 <img
                     src={spriteUrl}
                     alt={pokemon.name}
@@ -70,13 +72,13 @@ export function PokemonCard({ pokemon }: PokemonCardProps) {
             </div>
 
             {/* Details Section */}
-            <div className="w-full text-center mb-6 relative z-10">
-                <h3 className="font-black text-white text-2xl truncate capitalize tracking-tight mb-3">
+            <div className={`w-full text-center ${compact ? 'mb-2' : 'mb-6'} relative z-10`}>
+                <h3 className={`font-black text-white ${compact ? 'text-lg' : 'text-2xl'} truncate capitalize tracking-tight ${compact ? 'mb-1.5' : 'mb-3'}`}>
                     {pokemon.name}
                 </h3>
 
                 {/* Type Badges */}
-                <div className="flex gap-2 justify-center">
+                <div className="flex gap-2 justify-center flex-wrap">
                     {types.map((type: string) => (
                         <span
                             key={type}
@@ -89,41 +91,41 @@ export function PokemonCard({ pokemon }: PokemonCardProps) {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-2 w-full mt-auto relative z-10">
+            <div className={`grid grid-cols-2 gap-2 w-full mt-auto relative z-10 ${compact ? 'text-xs' : ''}`}>
                 {/* HP Badge */}
-                <div className="flex items-center justify-between bg-[#131B2C] rounded-xl px-3 py-2 cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-green-500/20 transition-all">
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-green-500/20 transition-all`}>
                     <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                         <Heart className="w-3.5 h-3.5 text-green-500 group-hover:drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
                         <span className="text-[10px] font-bold text-slate-400">PS</span>
                     </div>
-                    <span className="text-sm font-black text-green-400">{maxHp}</span>
+                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-green-400`}>{maxHp}</span>
                 </div>
 
                 {/* Attack Badge */}
-                <div className="flex items-center justify-between bg-[#131B2C] rounded-xl px-3 py-2 cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-red-500/20 transition-all">
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-red-500/20 transition-all`}>
                     <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                         <Sword className="w-3.5 h-3.5 text-red-500 group-hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
                         <span className="text-[10px] font-bold text-slate-400">ATQ</span>
                     </div>
-                    <span className="text-sm font-black text-red-400">{attack}</span>
+                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-red-400`}>{attack}</span>
                 </div>
 
                 {/* Defense Badge */}
-                <div className="flex items-center justify-between bg-[#131B2C] rounded-xl px-3 py-2 cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-blue-500/20 transition-all">
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-blue-500/20 transition-all`}>
                     <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                         <Shield className="w-3.5 h-3.5 text-blue-500 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
                         <span className="text-[10px] font-bold text-slate-400">DEF</span>
                     </div>
-                    <span className="text-sm font-black text-blue-400">{defense}</span>
+                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-blue-400`}>{defense}</span>
                 </div>
 
                 {/* Speed Badge */}
-                <div className="flex items-center justify-between bg-[#131B2C] rounded-xl px-3 py-2 cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-yellow-400/20 transition-all">
+                <div className={`flex items-center justify-between bg-[#131B2C] rounded-xl ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-yellow-400/20 transition-all`}>
                     <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                         <Zap className="w-3.5 h-3.5 text-yellow-400 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
                         <span className="text-[10px] font-bold text-slate-400">VEL</span>
                     </div>
-                    <span className="text-sm font-black text-yellow-400">{speed}</span>
+                    <span className={`${compact ? 'text-xs' : 'text-sm'} font-black text-yellow-400`}>{speed}</span>
                 </div>
             </div>
 

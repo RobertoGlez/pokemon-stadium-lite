@@ -49,30 +49,46 @@ export class ReadyPlayerUseCase {
                 throw new Error('Players are ready but missing teams');
             }
 
-            // Determine first turn: compare speed of Pokemon[0]
-            const p1Speed = player1.team[0].stats.speed;
-            const p2Speed = player2.team[0].stats.speed;
+            // Check if a battle was already created by the other player's concurrent ready request
+            let battle = await this.battleRepository.findByLobbyId(lobby.id);
 
-            // In case of a tie, default to player 1
-            const currentTurnPlayerId = p1Speed >= p2Speed ? player1.id! : player2.id!;
+            if (!battle) {
+                // Determine first turn: compare speed of Pokemon[0]
+                const p1Speed = player1.team[0].stats.speed;
+                const p2Speed = player2.team[0].stats.speed;
 
-            // Assemble BattleState
-            const newBattle: Omit<BattleState, 'id'> = {
-                lobbyId: lobby.id,
-                teams: new Map<string, PokemonBase[]>([
-                    [player1.id!, player1.team],
-                    [player2.id!, player2.team]
-                ]),
-                activePokemonIndex: new Map<string, number>([
-                    [player1.id!, 0],
-                    [player2.id!, 0]
-                ]),
-                currentTurnPlayerId,
-                winnerId: null
-            };
+                // In case of a tie, default to player 1
+                const currentTurnPlayerId = p1Speed >= p2Speed ? player1.id! : player2.id!;
 
-            const createdBattle = await this.battleRepository.create(newBattle);
-            return { battleStarted: true, battleState: createdBattle };
+                // Assemble BattleState
+                const newBattle: Omit<BattleState, 'id'> = {
+                    lobbyId: lobby.id,
+                    teams: new Map<string, PokemonBase[]>([
+                        [player1.id!, player1.team],
+                        [player2.id!, player2.team]
+                    ]),
+                    activePokemonIndex: new Map<string, number>([
+                        [player1.id!, 0],
+                        [player2.id!, 0]
+                    ]),
+                    currentTurnPlayerId,
+                    winnerId: null
+                };
+
+                try {
+                    battle = await this.battleRepository.create(newBattle);
+                } catch (error: any) {
+                    if (error.code === 11000 || (error?.message?.includes('11000'))) {
+                        const existingBattle = await this.battleRepository.findByLobbyId(lobby.id);
+                        if (!existingBattle) throw new Error('E11000 but cannot find battle');
+                        battle = existingBattle;
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+
+            return { battleStarted: true, battleState: battle };
         }
 
         return { battleStarted: false };
