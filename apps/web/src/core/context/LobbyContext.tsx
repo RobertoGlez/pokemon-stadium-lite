@@ -17,6 +17,8 @@ interface LobbyContextValue {
     currentTurnPlayerId: string | null;
     lastDamageEvent: { defenderId: string; damage: number; timestamp: number } | null;
     isRequestingTeam: boolean;
+    joinError: string | null;
+    clearJoinError: () => void;
 }
 
 const LobbyContext = createContext<LobbyContextValue | undefined>(undefined);
@@ -34,6 +36,9 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [currentTurnPlayerId, setCurrentTurnPlayerId] = useState<string | null>(null);
     const [lastDamageEvent, setLastDamageEvent] = useState<{ defenderId: string; damage: number; timestamp: number } | null>(null);
     const [isRequestingTeam, setIsRequestingTeam] = useState(false);
+    const [joinError, setJoinError] = useState<string | null>(null);
+
+    const clearJoinError = () => setJoinError(null);
 
     const localNicknameRef = useRef<string>('');
 
@@ -142,6 +147,16 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             // Optional: you can store the winner locally or handle routing
         });
 
+        newSocket.on('join_error', (data: { code: string; message: string }) => {
+            setJoinError(data.message);
+            // Disconnect: nickname conflict means we shouldn't stay connected
+            newSocket.disconnect();
+            setIsConnected(false);
+            setLocalNickname('');
+            socketRef.current = null;
+            setSocket(null);
+        });
+
         setSocket(newSocket);
         socketRef.current = newSocket;
     };
@@ -180,7 +195,9 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         disconnect,
         currentTurnPlayerId,
         lastDamageEvent,
-        isRequestingTeam
+        isRequestingTeam,
+        joinError,
+        clearJoinError
     };
 
     return (

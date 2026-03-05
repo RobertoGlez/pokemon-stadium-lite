@@ -61,8 +61,15 @@ export const initializeLobbyGateway = (io: Server) => {
                 socket.join(lobby.id!);
 
                 await broadcastLobbyStatus(lobby.id!);
-            } catch (error) {
-                console.error(`[Socket] Error in join_lobby:`, error);
+            } catch (error: any) {
+                if (error.message === 'NICKNAME_TAKEN') {
+                    socket.emit('join_error', {
+                        code: 'NICKNAME_TAKEN',
+                        message: `El apodo "${nickname}" ya está en uso. Elige otro.`
+                    });
+                } else {
+                    console.error(`[Socket] Error in join_lobby:`, error);
+                }
             }
         });
 
@@ -75,14 +82,40 @@ export const initializeLobbyGateway = (io: Server) => {
                 if (lobby) {
                     await broadcastLobbyStatus(lobby.id!);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`[Socket] Error in assign_pokemon:`, error);
             }
         });
 
         socket.on('disconnect', async () => {
             console.log(`[Socket] Disconnected: ${socket.id}`);
-            await playerRepo.deleteBySocketId(socket.id);
+            try {
+                const player = await playerRepo.findBySocketId(socket.id);
+                if (player && player.id) {
+                    // Mark offline immediately and not ready
+                    await playerRepo.update(player.id, { isOnline: false, isReady: false });
+
+                    const lobby = await lobbyRepo.findByPlayerId(player.id);
+                    if (lobby && lobby.id) {
+                        // Remove the disconnected player from the lobby
+                        const remainingPlayers = lobby.players.filter(pId => pId !== player.id);
+                        // If lobby had a battle in progress or is now empty, reset it to waiting
+                        const shouldReset = lobby.status === 'battling' || lobby.status === 'finished' || remainingPlayers.length === 0;
+                        await lobbyRepo.update(lobby.id, {
+                            players: remainingPlayers,
+                            status: shouldReset ? 'waiting' : lobby.status
+                        });
+                        // Notify remaining player that opponent left (re-broadcast lobby state)
+                        if (remainingPlayers.length > 0) {
+                            await broadcastLobbyStatus(lobby.id);
+                        }
+                        console.log(`[Socket] Removed player ${player.nickname} from lobby ${lobby.id}. Remaining: ${remainingPlayers.length}`);
+                    }
+                }
+                // We no longer delete the player record to keep history
+            } catch (err) {
+                console.error('[Socket] Error during disconnect cleanup:', err);
+            }
         });
 
         socket.on('ready', async () => {
@@ -145,8 +178,12 @@ export const initializeLobbyGateway = (io: Server) => {
                         io.to(turnResult.battleState.lobbyId).emit('battle_end', battleEndPayload);
                         console.log(`[Socket] Emitted battle_end to room ${turnResult.battleState.lobbyId}:`, JSON.stringify(battleEndPayload));
 
-                        // Clean up room mapping (optional, but good practice for finished lobbies)
-                        // In a more complex scenario, we'd gracefully disconnect players here too
+                        // Reset lobby so next players can reuse it cleanly
+                        await lobbyRepo.update(turnResult.battleState.lobbyId, {
+                            status: 'waiting',
+                            players: []
+                        });
+                        console.log(`[Socket] Reset lobby ${turnResult.battleState.lobbyId} for next match.`);
                     }
                 }
             } catch (error) {
