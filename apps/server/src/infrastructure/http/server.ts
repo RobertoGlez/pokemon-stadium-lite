@@ -5,6 +5,7 @@ import { setupRootRoutes } from '../../presentation/routes/root.routes';
 import { setupPlayerRoutes } from '../../presentation/routes/player.routes';
 import { Server } from 'socket.io';
 import { initializeLobbyGateway } from '../../presentation/gateways/lobby.gateway';
+import { MongoPlayerRepository } from '../database/repositories/mongo-player.repository';
 
 export const buildServer = async (): Promise<FastifyInstance> => {
     const app = Fastify({
@@ -52,7 +53,16 @@ export const buildServer = async (): Promise<FastifyInstance> => {
             }
         });
 
-        initializeLobbyGateway(io);
+        const playerRepo = new MongoPlayerRepository();
+        playerRepo.resetAllOnlineStatus()
+            .then(() => {
+                console.log('[Server] All players reset to offline status on startup.');
+                initializeLobbyGateway(io);
+            })
+            .catch((err: Error) => {
+                console.error('[Server] Failed to reset player statuses:', err);
+                initializeLobbyGateway(io);
+            });
     });
 
     return app;

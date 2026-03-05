@@ -7,4 +7,5 @@ export interface PlayerRepository {
     findByNickname(nickname: string): Promise<Player | null>;
     update(id: string, updates: Partial<Player>): Promise<Player | null>;
     deleteBySocketId(socketId: string): Promise<void>;
+    resetAllOnlineStatus(): Promise<void>;
 }

@@ -36,6 +36,10 @@ export class MongoPlayerRepository implements PlayerRepository {
         await PlayerModel.deleteOne({ socketId });
     }
 
+    async resetAllOnlineStatus(): Promise<void> {
+        await PlayerModel.updateMany({}, { isOnline: false, isReady: false });
+    }
+
     private mapToEntity(doc: any): Player {
         return {
             id: doc._id.toString(),

@@ -14,10 +14,8 @@ export class JoinLobbyUseCase {
         let player = await this.playerRepository.findByNickname(nickname);
 
         if (player && player.id) {
-            // Guard: if already online, reject duplicate connection
-            if (player.isOnline) {
-                throw new Error('NICKNAME_TAKEN');
-            }
+            // We no longer throw NICKNAME_TAKEN here to allow session takeover
+            // if a player was stuck in 'isOnline' state or refreshed quickly.
 
             // Sync/Update existing player state for the new session
             player = await this.playerRepository.update(player.id, {
