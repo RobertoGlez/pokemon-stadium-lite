@@ -116,7 +116,7 @@ export const initializeLobbyGateway = (io: Server) => {
                 console.log(`[Socket] attack requested by ${socket.id}`);
                 const turnResult = await processAttackUseCase.execute(socket.id);
 
-                const turnResultPayload = {
+                const turnResultPayload: any = {
                     damage: turnResult.damage,
                     remainingHp: turnResult.defenderRemainingHp,
                     isDefeated: turnResult.isDefeated,
@@ -125,8 +125,27 @@ export const initializeLobbyGateway = (io: Server) => {
                     nextTurnPlayerId: turnResult.battleState.currentTurnPlayerId
                 };
 
+                if (turnResult.matchFinished) {
+                    turnResultPayload.matchFinished = turnResult.matchFinished;
+                }
+
                 io.to(turnResult.battleState.lobbyId).emit('turn_result', turnResultPayload);
                 console.log(`[Socket] Emitted turn_result to room ${turnResult.battleState.lobbyId}:`, JSON.stringify(turnResultPayload));
+
+                if (turnResult.matchFinished && turnResult.winnerId) {
+                    const winner = await playerRepo.findById(turnResult.winnerId);
+                    if (winner) {
+                        const battleEndPayload = {
+                            winnerId: turnResult.winnerId,
+                            winnerName: winner.nickname
+                        };
+                        io.to(turnResult.battleState.lobbyId).emit('battle_end', battleEndPayload);
+                        console.log(`[Socket] Emitted battle_end to room ${turnResult.battleState.lobbyId}:`, JSON.stringify(battleEndPayload));
+
+                        // Clean up room mapping (optional, but good practice for finished lobbies)
+                        // In a more complex scenario, we'd gracefully disconnect players here too
+                    }
+                }
             } catch (error) {
                 // Silently log out of turn attacks or invalid actions
                 console.error(`[Socket] Attack rejected for ${socket.id}: ${(error as Error).message}`);

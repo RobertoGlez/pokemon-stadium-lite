@@ -12,6 +12,8 @@ export interface TurnResult {
     isDefeated: boolean;
     pokemonFainted?: boolean;
     nextDefenderPokemon?: PokemonBase;
+    matchFinished?: boolean;
+    winnerId?: string;
     battleState: BattleState;
 }
 
@@ -87,6 +89,8 @@ export class ProcessAttackUseCase {
         let isDefeated = false;
         let pokemonFainted = false;
         let nextDefenderPokemon: PokemonBase | undefined = undefined;
+        let matchFinished = false;
+        let winnerId: string | undefined = undefined;
 
         if (defenderPokemon.stats.currentHp === 0) {
             defenderPokemon.isDefeated = true;
@@ -99,11 +103,22 @@ export class ProcessAttackUseCase {
                 // T3: Assign new index to the ActivePokemonTracker in the DB
                 battle.activePokemonIndex.set(defenderId, nextIndex);
                 nextDefenderPokemon = defenderTeam[nextIndex];
+            } else {
+                // B-US-08: No more Pokémon left -> Match Finished
+                matchFinished = true;
+                winnerId = attackerId;
+                battle.winnerId = attackerId;
+                battle.currentTurnPlayerId = null;
+
+                lobby.status = 'finished';
+                await this.lobbyRepository.update(lobby.id!, { status: 'finished' });
             }
         }
 
         // 10. Change turn
-        battle.currentTurnPlayerId = defenderId;
+        if (!matchFinished) {
+            battle.currentTurnPlayerId = defenderId;
+        }
 
         // Update the defender's team in the map so Mongoose detects changes correctly
         battle.teams.set(defenderId, defenderTeam);
@@ -112,7 +127,8 @@ export class ProcessAttackUseCase {
         const updatedBattle = await this.battleRepository.update(battle.id, {
             teams: battle.teams,
             activePokemonIndex: battle.activePokemonIndex,
-            currentTurnPlayerId: battle.currentTurnPlayerId
+            currentTurnPlayerId: battle.currentTurnPlayerId,
+            winnerId: battle.winnerId
         });
 
         if (!updatedBattle) {
@@ -127,6 +143,8 @@ export class ProcessAttackUseCase {
             isDefeated,
             pokemonFainted,
             nextDefenderPokemon,
+            matchFinished,
+            winnerId,
             battleState: updatedBattle
         };
     }
