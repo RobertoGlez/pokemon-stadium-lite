@@ -93,7 +93,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         const socketUrl = getBackendUrl();
-        const newSocket = io(socketUrl, { transports: ['websocket'] });
+        const newSocket = io(socketUrl);
 
         newSocket.on('connect', () => {
             setIsConnected(true);
