@@ -10,12 +10,31 @@ export class JoinLobbyUseCase {
     ) { }
 
     async execute(nickname: string, socketId: string): Promise<{ lobby: Lobby; player: Player }> {
-        // 1. Create the Player
-        let player = await this.playerRepository.create({
-            nickname,
-            socketId,
-            joinedLobbyAt: new Date()
-        });
+        // 1. Check for existing player by nickname (Case insensitive or exactly as requested)
+        let player = await this.playerRepository.findByNickname(nickname);
+
+        if (player && player.id) {
+            // We no longer throw NICKNAME_TAKEN here to allow session takeover
+            // if a player was stuck in 'isOnline' state or refreshed quickly.
+
+            // Sync/Update existing player state for the new session
+            player = await this.playerRepository.update(player.id, {
+                socketId,
+                isOnline: true,
+                isReady: false,
+                joinedLobbyAt: new Date()
+            }) as Player;
+        } else {
+            // Create new player record
+            player = await this.playerRepository.create({
+                nickname,
+                socketId,
+                joinedLobbyAt: new Date(),
+                createdAt: new Date(),
+                isOnline: true,
+                isReady: false
+            });
+        }
 
         // The created player should have an ID assigned by the database
         if (!player.id) {

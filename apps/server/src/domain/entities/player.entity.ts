@@ -1,10 +1,12 @@
 import { PokemonBase } from './pokemon.entity';
 
 export interface Player {
-    id?: string; // Optional for new players before persistence
+    id?: string;
     nickname: string;
     socketId: string;
     joinedLobbyAt: Date;
-    team?: PokemonBase[]; // Team assigned to the player
-    isReady?: boolean; // Indicates if the player is ready for battle
+    createdAt?: Date;
+    team?: PokemonBase[];
+    isReady?: boolean;
+    isOnline?: boolean;
 }

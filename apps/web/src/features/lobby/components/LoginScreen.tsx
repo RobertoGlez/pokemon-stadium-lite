@@ -4,20 +4,23 @@ import { useLobby } from '../../../core/context/LobbyContext';
 import { Server, User, ArrowRight, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Globe } from '../../../shared/components/magicui/globe';
 import { useServerValidation } from '../hooks/useServerValidation';
+import { apiClient } from '../../../core/axios.client';
 import logo from '../../../assets/identity/logo.png';
 
 export function LoginScreen() {
     const [nickname, setNickname] = useState('');
     const [serverUrl, setServerUrl] = useState('');
     const [formError, setFormError] = useState('');
+    const [nicknameError, setNicknameError] = useState('');
+    const [isCheckingNickname, setIsCheckingNickname] = useState(false);
 
     const navigate = useNavigate();
-    const { connectAndJoin, isConnected } = useLobby();
+    const { connectAndJoin, isConnected, joinError, clearJoinError } = useLobby();
     const { validateServer, isValid, isChecking, error: serverError, metadata } = useServerValidation();
 
     useEffect(() => {
         // Load saved config
-        const savedUrl = localStorage.getItem('backendUrl') || 'http://localhost:8080';
+        const savedUrl = localStorage.getItem('backendUrl') || import.meta.env.VITE_API_BACKEND || 'http://localhost:8080';
         setServerUrl(savedUrl);
         // Initial silent validation
         if (savedUrl) {
@@ -38,6 +41,24 @@ export function LoginScreen() {
         }
     };
 
+    const handleNicknameBlur = async () => {
+        if (!nickname.trim() || nickname.trim().length <= 3) return;
+        setIsCheckingNickname(true);
+        setNicknameError('');
+        try {
+            const res = await apiClient.get<{ available: boolean; message?: string }>(
+                `/api/players/check?nickname=${encodeURIComponent(nickname.trim())}`
+            );
+            if (!res.data.available) {
+                setNicknameError(res.data.message || 'Este apodo ya está en uso.');
+            }
+        } catch {
+            // If the check fails (server down etc.) we allow the attempt
+        } finally {
+            setIsCheckingNickname(false);
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -55,8 +76,8 @@ export function LoginScreen() {
         connectAndJoin(nickname.trim());
     };
 
-    const isFormValid = isValid && nickname.trim().length > 3 && !isChecking;
-    const currentError = formError || serverError;
+    const isFormValid = isValid && nickname.trim().length > 3 && !isChecking && !nicknameError && !isCheckingNickname;
+    const currentError = formError || serverError || joinError || nicknameError;
 
     // Determine Status Dot Color
     let statusDotClass = "bg-muted-foreground/40"; // disconnected/unknown
@@ -95,7 +116,7 @@ export function LoginScreen() {
 
                     <h2 className="text-3xl font-bold mb-3 tracking-tight text-white text-center">Pokémon Stadium Lite</h2>
                     <p className="text-sm text-muted-foreground text-center max-w-[280px]">
-                        Set up your connection to enter the arena and challenge other trainers.
+                        Configura tu conexión para entrar a la arena y retar a otros entrenadores.
                     </p>
                 </div>
 
@@ -107,7 +128,7 @@ export function LoginScreen() {
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
                                 <Server className="w-3.5 h-3.5 text-primary" />
-                                Server Connection
+                                Conexión al Servidor
                             </label>
                             <div className="relative">
                                 <input
@@ -119,7 +140,7 @@ export function LoginScreen() {
                                     }}
                                     onBlur={handleBlur}
                                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
-                                    placeholder="http://localhost:8080"
+                                    placeholder={import.meta.env.VITE_API_BACKEND || "http://localhost:8080"}
                                 />
                                 <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-colors duration-300 ${statusDotClass}`} />
                             </div>
@@ -133,7 +154,7 @@ export function LoginScreen() {
                                     </div>
                                 ) : isValid && metadata ? (
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-green-500 font-medium bg-green-500/10 p-2 rounded-lg border border-green-500/20">
-                                        <span className="flex items-center gap-1 font-bold"><CheckCircle2 className="w-3.5 h-3.5" /> Online</span>
+                                        <span className="flex items-center gap-1 font-bold"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
                                         <span>{metadata.serverName}</span>
                                         <span>v{metadata.version}</span>
                                         <span className="capitalize">{metadata.region}</span>
@@ -141,7 +162,7 @@ export function LoginScreen() {
                                 ) : serverError && !isChecking && serverUrl ? (
                                     <div className="flex items-center gap-2 text-[11px] text-red-500 font-medium bg-red-500/10 p-2 rounded-lg border border-red-500/20">
                                         <XCircle className="w-3.5 h-3.5" />
-                                        <span>Offline</span>
+                                        <span>Desconectado</span>
                                     </div>
                                 ) : null}
                             </div>
@@ -153,16 +174,40 @@ export function LoginScreen() {
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
                                 <User className="w-3.5 h-3.5 text-primary" />
-                                Trainer Nickname
+                                Nickname de entrenador
                             </label>
-                            <input
-                                type="text"
-                                value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
-                                maxLength={15}
-                                className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
-                                placeholder="Ej: Red"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={nickname}
+                                    onChange={(e) => {
+                                        const val = e.target.value.toLowerCase();
+                                        if (/^[a-z0-9-]*$/.test(val)) {
+                                            setNickname(val);
+                                            if (joinError) clearJoinError();
+                                            if (nicknameError) setNicknameError('');
+                                        }
+                                    }}
+                                    onBlur={handleNicknameBlur}
+                                    maxLength={15}
+                                    className={`w-full h-12 px-4 pr-10 rounded-xl border bg-background text-foreground focus:outline-none focus:ring-1 transition-all font-medium ${nicknameError
+                                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                                        : 'border-border focus:border-primary focus:ring-primary'
+                                        }`}
+                                    placeholder="Ej: ash-1"
+                                />
+                                {isCheckingNickname && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                    </div>
+                                )}
+                            </div>
+                            {nicknameError && (
+                                <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
+                                    <XCircle className="w-3.5 h-3.5 shrink-0" />
+                                    {nicknameError}
+                                </p>
+                            )}
                         </div>
 
                     </form>
@@ -185,15 +230,15 @@ export function LoginScreen() {
                         : 'bg-muted text-muted-foreground cursor-not-allowed border border-border/50'
                         }`}
                 >
-                    {isChecking ? 'VALIDATING...' : 'CONNECT TO STADIUM'}
+                    {isChecking ? 'VALIDANDO...' : 'CONECTAR AL ESTADIO'}
                     {!isChecking && <ArrowRight className="w-5 h-5" />}
                 </button>
 
                 {/* Footer */}
                 <div className="flex items-center justify-center gap-3 mt-6 text-xs text-muted-foreground font-medium">
-                    <span>Server Status</span>
+                    <span>Estado del Servidor</span>
                     <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-muted-foreground/40'}`} />
-                    <a href="#" className="hover:text-foreground transition-colors ml-2">Help</a>
+                    <a href="#" className="hover:text-foreground transition-colors ml-2">Ayuda</a>
                 </div>
 
             </div>

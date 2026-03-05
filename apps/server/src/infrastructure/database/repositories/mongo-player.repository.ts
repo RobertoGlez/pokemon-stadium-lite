@@ -20,6 +20,12 @@ export class MongoPlayerRepository implements PlayerRepository {
         return this.mapToEntity(doc);
     }
 
+    async findByNickname(nickname: string): Promise<Player | null> {
+        const doc = await PlayerModel.findOne({ nickname });
+        if (!doc) return null;
+        return this.mapToEntity(doc);
+    }
+
     async update(id: string, updates: Partial<Player>): Promise<Player | null> {
         const updated = await PlayerModel.findByIdAndUpdate(id, updates, { new: true });
         if (!updated) return null;
@@ -30,14 +36,20 @@ export class MongoPlayerRepository implements PlayerRepository {
         await PlayerModel.deleteOne({ socketId });
     }
 
+    async resetAllOnlineStatus(): Promise<void> {
+        await PlayerModel.updateMany({}, { isOnline: false, isReady: false });
+    }
+
     private mapToEntity(doc: any): Player {
         return {
             id: doc._id.toString(),
             nickname: doc.nickname,
             socketId: doc.socketId,
             joinedLobbyAt: doc.joinedLobbyAt,
+            createdAt: doc.createdAt,
             team: doc.team || [],
-            isReady: doc.isReady || false
+            isReady: doc.isReady || false,
+            isOnline: doc.isOnline || false
         };
     }
 }

@@ -29,3 +29,10 @@ export interface LobbyStatusPayload {
     status: 'waiting' | 'ready' | 'battling' | 'finished';
     players: Player[];
 }
+
+export interface BattleLogEntry {
+    id: string;
+    type: 'info' | 'damage' | 'defeat' | 'switch' | 'winner';
+    message: string;
+    timestamp: number;
+}
