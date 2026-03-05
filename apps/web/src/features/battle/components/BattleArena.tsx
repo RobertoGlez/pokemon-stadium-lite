@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLobby } from '../../../core/context/LobbyContext';
 import { HealthBar } from '../../../shared/components/pokemon/HealthBar';
 
 export function BattleArena() {
     const navigate = useNavigate();
-    const { isConnected, lobbyStatus, currentTurnPlayerId, players, localNickname, emitAttack } = useLobby();
+    const { isConnected, lobbyStatus, currentTurnPlayerId, players, localNickname, emitAttack, lastDamageEvent } = useLobby();
+
+    // Local ephemeral states for real-time CSS animations
+    const [animateDamageFor, setAnimateDamageFor] = useState<'ally' | 'opponent' | null>(null);
 
     // Route Guard
     useEffect(() => {
@@ -13,6 +16,22 @@ export function BattleArena() {
             navigate('/lobby');
         }
     }, [isConnected, lobbyStatus, navigate]);
+
+    // Listen to damage events sequentially to drop "pop-ups"
+    useEffect(() => {
+        if (!lastDamageEvent) return;
+
+        const localPlayer = players.find(p => p.nickname === localNickname);
+        const isAllyHit = lastDamageEvent.defenderId === localPlayer?.id;
+
+        setAnimateDamageFor(isAllyHit ? 'ally' : 'opponent');
+
+        const timer = setTimeout(() => {
+            setAnimateDamageFor(null);
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [lastDamageEvent, players, localNickname]);
 
     if (!isConnected || (lobbyStatus !== 'battling' && lobbyStatus !== 'finished')) return null;
 
@@ -39,8 +58,16 @@ export function BattleArena() {
     const activeAlly = localPlayer?.team?.find(p => !p.isDefeated);
     const activeOpponent = opponent?.team?.find(p => !p.isDefeated);
 
+    const allyDamageClasses = animateDamageFor === 'ally'
+        ? "brightness-150 sepia hue-rotate-[-50deg] saturate-[3] drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]"
+        : "drop-shadow-[0_0_15px_rgba(37,99,235,0.3)]";
+
+    const opponentDamageClasses = animateDamageFor === 'opponent'
+        ? "brightness-150 sepia hue-rotate-[-50deg] saturate-[3] drop-shadow-[0_0_20px_rgba(239,68,68,0.8)] scale-x-[-1]"
+        : "drop-shadow-[0_0_15px_rgba(239,68,68,0.3)] scale-x-[-1]";
+
     return (
-        <div className="relative flex flex-col relative items-center justify-between min-h-screen p-8 bg-background text-foreground dark overflow-hidden selection:bg-none">
+        <div className="relative flex flex-col items-center justify-between min-h-screen p-8 bg-background text-foreground dark overflow-hidden selection:bg-none">
 
             {/* Header Status */}
             <div className="text-center mt-4">
@@ -65,11 +92,17 @@ export function BattleArena() {
                     {activeAlly ? (
                         <div className="relative group flex flex-col items-center">
                             <HealthBar currentHp={activeAlly.stats.currentHp} maxHp={activeAlly.stats.maxHp} />
-                            <div className="h-48 w-48 mt-8 relative">
+                            <div className="h-48 w-48 mt-8 relative flex justify-center items-center">
+                                {/* Floating Damage Text */}
+                                {animateDamageFor === 'ally' && (
+                                    <div className="absolute top-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-md z-10 pointer-events-none">
+                                        -{lastDamageEvent?.damage} HP
+                                    </div>
+                                )}
                                 <img
                                     src={activeAlly.spriteUrl}
                                     alt={activeAlly.name}
-                                    className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(37,99,235,0.3)] select-none"
+                                    className={`w-full h-full object-contain filter select-none transition-all duration-150 ${allyDamageClasses}`}
                                 />
                             </div>
                             <span className="mt-4 font-bold text-lg uppercase tracking-wide">{activeAlly.name}</span>
@@ -89,12 +122,17 @@ export function BattleArena() {
                     {activeOpponent ? (
                         <div className="relative group flex flex-col items-center">
                             <HealthBar currentHp={activeOpponent.stats.currentHp} maxHp={activeOpponent.stats.maxHp} />
-                            <div className="h-48 w-48 mt-8 relative">
+                            <div className="h-48 w-48 mt-8 relative flex justify-center items-center">
+                                {/* Floating Damage Text */}
+                                {animateDamageFor === 'opponent' && (
+                                    <div className="absolute top-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-md z-10 pointer-events-none">
+                                        -{lastDamageEvent?.damage} HP
+                                    </div>
+                                )}
                                 <img
                                     src={activeOpponent.spriteUrl}
                                     alt={activeOpponent.name}
-                                    // Mirror the sprite to face left
-                                    className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(239,68,68,0.3)] scale-x-[-1] select-none"
+                                    className={`w-full h-full object-contain filter select-none transition-all duration-150 ${opponentDamageClasses}`}
                                 />
                             </div>
                             <span className="mt-4 font-bold text-lg uppercase tracking-wide">{activeOpponent.name}</span>

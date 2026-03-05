@@ -15,6 +15,7 @@ interface LobbyContextValue {
     connectAndJoin: (nickname: string) => void;
     disconnect: () => void;
     currentTurnPlayerId: string | null;
+    lastDamageEvent: { defenderId: string; damage: number; timestamp: number } | null;
 }
 
 const LobbyContext = createContext<LobbyContextValue | undefined>(undefined);
@@ -30,6 +31,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [lobbyStatus, setLobbyStatus] = useState<'waiting' | 'ready' | 'battling' | 'finished' | 'idle'>('idle');
     const [players, setPlayers] = useState<Player[]>([]);
     const [currentTurnPlayerId, setCurrentTurnPlayerId] = useState<string | null>(null);
+    const [lastDamageEvent, setLastDamageEvent] = useState<{ defenderId: string; damage: number; timestamp: number } | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
     const turnPlayerIdRef = useRef<string | null>(null);
@@ -88,9 +90,18 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         });
 
         newSocket.on('turn_result', (data: any) => {
+            // Log for reactive animations component to pickup
+            if (data.damage && data.defenderId) {
+                setLastDamageEvent({
+                    defenderId: data.defenderId,
+                    damage: data.damage,
+                    timestamp: Date.now() // to trigger effect even if same damage is repeated
+                });
+            }
+
             setPlayers(prevPlayers => prevPlayers.map(p => {
-                // If this player was NOT the attacker, they are the defender receiving damage
-                if (p.id !== turnPlayerIdRef.current) {
+                // If this player is explicitly the defender receiving damage
+                if (p.id === data.defenderId) {
                     const newTeam = [...(p.team || [])];
                     const activeIdx = newTeam.findIndex(poke => !poke.isDefeated);
                     if (activeIdx !== -1) {
@@ -153,7 +164,8 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         emitAttack,
         connectAndJoin,
         disconnect,
-        currentTurnPlayerId
+        currentTurnPlayerId,
+        lastDamageEvent
     };
 
     return (

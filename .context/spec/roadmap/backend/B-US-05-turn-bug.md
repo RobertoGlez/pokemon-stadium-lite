@@ -1,6 +1,6 @@
 # B-US-05: Bug - Jugadores Atrapados en "Waiting for opponent" (Turn Logic Bug)
 
-**Estado:** [ ] TODO
+**Estado:** [x] DONE
 
 ## Descripción del Bug
 El Front-End depende de la comparación entre `currentTurnPlayerId` (enviado en el evento `battle_start`) y el `id` asignado a su propio perfil (`localPlayer.id`) para habilitar el botón de Ataque y deducir quién tiene el turno.
@@ -29,8 +29,8 @@ Modificar `apps/server/src/presentation/gateways/lobby.gateway.ts`, específicam
 ```
 
 ## Tareas (Tasks)
-- [ ] T1: Modificar `lobby.gateway.ts` para que exponga el `id` del jugador en el broadcast de WebSockets.
-- [ ] T2: Reiniciar el servidor Node.js y validar en el Front-End que el botón de Ataque se habilite para el jugador con el Pokémon más rápido.
+- [x] T1: Modificar `lobby.gateway.ts` para que exponga el `id` del jugador en el broadcast de WebSockets.
+- [x] T2: Reiniciar el servidor Node.js y validar en el Front-End que el botón de Ataque se habilite para el jugador con el Pokémon más rápido.
 
 ## Criterios de Aceptación
 - El evento WebSocket `lobby_status` incluye el `id` de cada jugador.

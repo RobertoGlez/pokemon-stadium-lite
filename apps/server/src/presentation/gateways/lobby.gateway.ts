@@ -28,6 +28,7 @@ export const initializeLobbyGateway = (io: Server) => {
             const p = await playerRepo.findById(playerId);
             if (p) {
                 playersData.push({
+                    id: p.id,
                     nickname: p.nickname,
                     team: p.team || [],
                     isReady: p.isReady || false
@@ -117,6 +118,8 @@ export const initializeLobbyGateway = (io: Server) => {
                 const turnResult = await processAttackUseCase.execute(socket.id);
 
                 const turnResultPayload: any = {
+                    attackerId: turnResult.attackerId,
+                    defenderId: turnResult.defenderId,
                     damage: turnResult.damage,
                     remainingHp: turnResult.defenderRemainingHp,
                     isDefeated: turnResult.isDefeated,
