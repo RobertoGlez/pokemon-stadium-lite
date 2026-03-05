@@ -9,6 +9,7 @@ interface LobbyContextValue {
     localNickname: string;
     lobbyStatus: 'waiting' | 'ready' | 'battling' | 'finished' | 'idle';
     players: Player[];
+    requestTeam: () => void;
     connectAndJoin: (nickname: string) => void;
     disconnect: () => void;
 }
@@ -27,6 +28,12 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [players, setPlayers] = useState<Player[]>([]);
 
     const socketRef = useRef<Socket | null>(null);
+
+    const requestTeam = () => {
+        if (socketRef.current) {
+            socketRef.current.emit('assign_pokemon');
+        }
+    };
 
     const connectAndJoin = (nickname: string) => {
         if (socketRef.current) {
@@ -83,6 +90,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         localNickname,
         lobbyStatus,
         players,
+        requestTeam,
         connectAndJoin,
         disconnect
     };

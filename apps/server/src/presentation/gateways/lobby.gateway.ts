@@ -29,7 +29,7 @@ export const initializeLobbyGateway = (io: Server) => {
             if (p) {
                 playersData.push({
                     nickname: p.nickname,
-                    team: p.team ? p.team.map(poke => poke.name) : [],
+                    team: p.team || [],
                     isReady: p.isReady || false
                 });
             }
