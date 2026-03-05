@@ -16,6 +16,7 @@ interface LobbyContextValue {
     disconnect: () => void;
     currentTurnPlayerId: string | null;
     lastDamageEvent: { defenderId: string; damage: number; timestamp: number } | null;
+    isRequestingTeam: boolean;
 }
 
 const LobbyContext = createContext<LobbyContextValue | undefined>(undefined);
@@ -32,6 +33,9 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [players, setPlayers] = useState<Player[]>([]);
     const [currentTurnPlayerId, setCurrentTurnPlayerId] = useState<string | null>(null);
     const [lastDamageEvent, setLastDamageEvent] = useState<{ defenderId: string; damage: number; timestamp: number } | null>(null);
+    const [isRequestingTeam, setIsRequestingTeam] = useState(false);
+
+    const localNicknameRef = useRef<string>('');
 
     const socketRef = useRef<Socket | null>(null);
     const turnPlayerIdRef = useRef<string | null>(null);
@@ -43,6 +47,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const requestTeam = () => {
         if (socketRef.current) {
+            setIsRequestingTeam(true);
             socketRef.current.emit('assign_pokemon');
         }
     };
@@ -70,6 +75,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         newSocket.on('connect', () => {
             setIsConnected(true);
             setLocalNickname(nickname);
+            localNicknameRef.current = nickname;
             newSocket.emit('join_lobby', nickname);
         });
 
@@ -81,7 +87,15 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         newSocket.on('lobby_status', (data: LobbyStatusPayload) => {
             setLobbyStatus(data.status);
-            setPlayers(data.players || []);
+            const incomingPlayers = data.players || [];
+            setPlayers(incomingPlayers);
+            // Clear loading state once local player's team is defined
+            const localPlayer = incomingPlayers.find(
+                (p: any) => p.nickname === localNicknameRef.current
+            );
+            if (localPlayer?.team && localPlayer.team.length > 0) {
+                setIsRequestingTeam(false);
+            }
         });
 
         newSocket.on('battle_start', (data: { currentTurnPlayerId: string }) => {
@@ -165,7 +179,8 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         connectAndJoin,
         disconnect,
         currentTurnPlayerId,
-        lastDamageEvent
+        lastDamageEvent,
+        isRequestingTeam
     };
 
     return (

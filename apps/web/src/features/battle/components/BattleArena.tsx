@@ -35,24 +35,11 @@ export function BattleArena() {
 
     if (!isConnected || (lobbyStatus !== 'battling' && lobbyStatus !== 'finished')) return null;
 
-    if (lobbyStatus === 'finished') {
-        const localPlayerObj = players.find(p => p.nickname === localNickname);
-        const myTeamAllDead = localPlayerObj?.team?.every(p => p.isDefeated) ?? true;
-
-        return (
-            <div className="relative flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground dark">
-                <h1 className={`text-6xl font-black uppercase tracking-widest mb-4 ${myTeamAllDead ? 'text-red-500' : 'text-green-500'}`}>
-                    {myTeamAllDead ? 'DEFEAT' : 'VICTORY'}
-                </h1>
-                <button onClick={() => navigate('/lobby')} className="mt-8 px-8 py-3 bg-primary rounded-xl font-bold">RETURN TO LOBBY</button>
-            </div>
-        );
-    }
-
     const localPlayer = players.find(p => p.nickname === localNickname);
     const opponent = players.find(p => p.nickname !== localNickname);
 
     const isMyTurn = currentTurnPlayerId === localPlayer?.id;
+    const myTeamAllDead = localPlayer?.team?.every(p => p.isDefeated) ?? true;
 
     // Evaluate active pokemons
     const activeAlly = localPlayer?.team?.find(p => !p.isDefeated);
@@ -72,13 +59,13 @@ export function BattleArena() {
             {/* Header Status */}
             <div className="text-center mt-4">
                 <h2 className="text-3xl font-black tracking-tighter text-primary/80">
-                    BATTLE STAGE
+                    ESTADIO DE BATALLA
                 </h2>
                 <div className="mt-2 text-sm uppercase tracking-widest font-bold border border-border bg-card px-6 py-2 rounded-full inline-block">
                     {isMyTurn ? (
-                        <span className="text-green-500 animate-pulse">Your Turn</span>
+                        <span className="text-green-500 animate-pulse">Tu Turno</span>
                     ) : (
-                        <span className="text-orange-500">Waiting For Opponent...</span>
+                        <span className="text-orange-500">Esperando al Oponente...</span>
                     )}
                 </div>
             </div>
@@ -108,7 +95,7 @@ export function BattleArena() {
                             <span className="mt-4 font-bold text-lg uppercase tracking-wide">{activeAlly.name}</span>
                         </div>
                     ) : (
-                        <span className="text-red-500 font-bold opacity-50 h-48 flex items-center">TEAM DEFEATED</span>
+                        <span className="text-red-500 font-bold opacity-50 h-48 flex items-center">EQUIPO DERROTADO</span>
                     )}
                 </div>
 
@@ -138,7 +125,7 @@ export function BattleArena() {
                             <span className="mt-4 font-bold text-lg uppercase tracking-wide">{activeOpponent.name}</span>
                         </div>
                     ) : (
-                        <span className="text-red-500 font-bold opacity-50 h-48 flex items-center">TEAM DEFEATED</span>
+                        <span className="text-red-500 font-bold opacity-50 h-48 flex items-center">EQUIPO DERROTADO</span>
                     )}
                 </div>
             </div>
@@ -147,16 +134,28 @@ export function BattleArena() {
             <div className="mb-12">
                 <button
                     onClick={emitAttack}
-                    disabled={!isMyTurn || !activeAlly || !activeOpponent}
+                    disabled={!isMyTurn || !activeAlly || !activeOpponent || lobbyStatus === 'finished'}
                     className={`relative overflow-hidden w-64 h-16 rounded-xl font-black tracking-widest text-lg transition-all duration-300 ease-out 
-                        ${isMyTurn
+                        ${(isMyTurn && lobbyStatus !== 'finished')
                             ? 'bg-primary text-white hover:scale-105 hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] cursor-pointer'
                             : 'bg-card text-muted-foreground border border-muted-foreground opacity-50 cursor-not-allowed'
                         }`}
                 >
-                    FIGHT
+                    ATACAR
                 </button>
             </div>
+
+            {/* Victory/Defeat Modal */}
+            {lobbyStatus === 'finished' && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <h1 className={`text-7xl font-black uppercase tracking-widest mb-6 ${myTeamAllDead ? 'text-red-500' : 'text-green-500'}`}>
+                        {myTeamAllDead ? 'DERROTA' : '¡VICTORIA!'}
+                    </h1>
+                    <button onClick={() => navigate('/lobby')} className="px-8 py-3 bg-primary text-white hover:bg-primary/80 rounded-xl font-bold transition-all hover:scale-105">
+                        VOLVER AL LOBBY
+                    </button>
+                </div>
+            )}
 
         </div>
     );

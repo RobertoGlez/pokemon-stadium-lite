@@ -95,7 +95,7 @@ export function LoginScreen() {
 
                     <h2 className="text-3xl font-bold mb-3 tracking-tight text-white text-center">Pokémon Stadium Lite</h2>
                     <p className="text-sm text-muted-foreground text-center max-w-[280px]">
-                        Set up your connection to enter the arena and challenge other trainers.
+                        Configura tu conexión para entrar a la arena y retar a otros entrenadores.
                     </p>
                 </div>
 
@@ -107,7 +107,7 @@ export function LoginScreen() {
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
                                 <Server className="w-3.5 h-3.5 text-primary" />
-                                Server Connection
+                                Conexión al Servidor
                             </label>
                             <div className="relative">
                                 <input
@@ -133,7 +133,7 @@ export function LoginScreen() {
                                     </div>
                                 ) : isValid && metadata ? (
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-green-500 font-medium bg-green-500/10 p-2 rounded-lg border border-green-500/20">
-                                        <span className="flex items-center gap-1 font-bold"><CheckCircle2 className="w-3.5 h-3.5" /> Online</span>
+                                        <span className="flex items-center gap-1 font-bold"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
                                         <span>{metadata.serverName}</span>
                                         <span>v{metadata.version}</span>
                                         <span className="capitalize">{metadata.region}</span>
@@ -141,7 +141,7 @@ export function LoginScreen() {
                                 ) : serverError && !isChecking && serverUrl ? (
                                     <div className="flex items-center gap-2 text-[11px] text-red-500 font-medium bg-red-500/10 p-2 rounded-lg border border-red-500/20">
                                         <XCircle className="w-3.5 h-3.5" />
-                                        <span>Offline</span>
+                                        <span>Desconectado</span>
                                     </div>
                                 ) : null}
                             </div>
@@ -153,15 +153,20 @@ export function LoginScreen() {
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
                                 <User className="w-3.5 h-3.5 text-primary" />
-                                Trainer Nickname
+                                Nickname de entrenador
                             </label>
                             <input
                                 type="text"
                                 value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value.toLowerCase();
+                                    if (/^[a-z0-9-]*$/.test(val)) {
+                                        setNickname(val);
+                                    }
+                                }}
                                 maxLength={15}
                                 className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
-                                placeholder="Ej: Red"
+                                placeholder="Ej: ash-1"
                             />
                         </div>
 
@@ -185,15 +190,15 @@ export function LoginScreen() {
                         : 'bg-muted text-muted-foreground cursor-not-allowed border border-border/50'
                         }`}
                 >
-                    {isChecking ? 'VALIDATING...' : 'CONNECT TO STADIUM'}
+                    {isChecking ? 'VALIDANDO...' : 'CONECTAR AL ESTADIO'}
                     {!isChecking && <ArrowRight className="w-5 h-5" />}
                 </button>
 
                 {/* Footer */}
                 <div className="flex items-center justify-center gap-3 mt-6 text-xs text-muted-foreground font-medium">
-                    <span>Server Status</span>
+                    <span>Estado del Servidor</span>
                     <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-muted-foreground/40'}`} />
-                    <a href="#" className="hover:text-foreground transition-colors ml-2">Help</a>
+                    <a href="#" className="hover:text-foreground transition-colors ml-2">Ayuda</a>
                 </div>
 
             </div>
