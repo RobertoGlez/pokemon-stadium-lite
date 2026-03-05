@@ -3,7 +3,7 @@ import axios from 'axios';
 // Usamos la variable de entorno como fallback, pero priorizamos la localStorage 
 // por si el usuario ya ingresó una IP dinámica según los requerimientos.
 const getBaseUrl = () => {
-    const localUrl = localStorage.getItem('backend_url');
+    const localUrl = localStorage.getItem('backendUrl');
     if (localUrl) return localUrl;
 
     return import.meta.env.VITE_API_BACKEND || 'http://localhost:8080';
