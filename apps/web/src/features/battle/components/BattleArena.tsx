@@ -1,42 +1,125 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLobby } from '../../../core/context/LobbyContext';
+import { HealthBar } from '../../../shared/components/pokemon/HealthBar';
 
 export function BattleArena() {
     const navigate = useNavigate();
-    const { isConnected, lobbyStatus, currentTurnPlayerId, players, localNickname } = useLobby();
+    const { isConnected, lobbyStatus, currentTurnPlayerId, players, localNickname, emitAttack } = useLobby();
 
     // Route Guard
     useEffect(() => {
-        if (!isConnected || lobbyStatus !== 'battling') {
+        if (!isConnected || (lobbyStatus !== 'battling' && lobbyStatus !== 'finished')) {
             navigate('/lobby');
         }
     }, [isConnected, lobbyStatus, navigate]);
 
-    if (!isConnected || lobbyStatus !== 'battling') return null;
+    if (!isConnected || (lobbyStatus !== 'battling' && lobbyStatus !== 'finished')) return null;
+
+    if (lobbyStatus === 'finished') {
+        const localPlayerObj = players.find(p => p.nickname === localNickname);
+        const myTeamAllDead = localPlayerObj?.team?.every(p => p.isDefeated) ?? true;
+
+        return (
+            <div className="relative flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground dark">
+                <h1 className={`text-6xl font-black uppercase tracking-widest mb-4 ${myTeamAllDead ? 'text-red-500' : 'text-green-500'}`}>
+                    {myTeamAllDead ? 'DEFEAT' : 'VICTORY'}
+                </h1>
+                <button onClick={() => navigate('/lobby')} className="mt-8 px-8 py-3 bg-primary rounded-xl font-bold">RETURN TO LOBBY</button>
+            </div>
+        );
+    }
 
     const localPlayer = players.find(p => p.nickname === localNickname);
     const opponent = players.find(p => p.nickname !== localNickname);
+
     const isMyTurn = currentTurnPlayerId === localPlayer?.id;
 
-    return (
-        <div className="relative flex flex-col items-center justify-center min-h-screen p-4 bg-background text-foreground dark">
-            <h1 className="text-4xl font-bold tracking-tighter mb-8 text-primary">BATTLE ARENA</h1>
+    // Evaluate active pokemons
+    const activeAlly = localPlayer?.team?.find(p => !p.isDefeated);
+    const activeOpponent = opponent?.team?.find(p => !p.isDefeated);
 
-            <div className="bg-card border border-border rounded-xl p-8 shadow-2xl space-y-4 text-center">
-                <p className="text-xl font-medium">
-                    <span className="text-primary font-bold">{localNickname}</span> vs <span className="text-red-500 font-bold">{opponent?.nickname || 'Rival'}</span>
-                </p>
-                <div className="h-px bg-border w-full my-4" />
-                <p className="text-lg">
-                    Current Turn: {' '}
+    return (
+        <div className="relative flex flex-col relative items-center justify-between min-h-screen p-8 bg-background text-foreground dark overflow-hidden selection:bg-none">
+
+            {/* Header Status */}
+            <div className="text-center mt-4">
+                <h2 className="text-3xl font-black tracking-tighter text-primary/80">
+                    BATTLE STAGE
+                </h2>
+                <div className="mt-2 text-sm uppercase tracking-widest font-bold border border-border bg-card px-6 py-2 rounded-full inline-block">
                     {isMyTurn ? (
-                        <span className="text-green-500 font-bold animate-pulse">YOUR TURN</span>
+                        <span className="text-green-500 animate-pulse">Your Turn</span>
                     ) : (
-                        <span className="text-orange-500 font-bold">OPPONENT'S TURN</span>
+                        <span className="text-orange-500">Waiting For Opponent...</span>
                     )}
-                </p>
+                </div>
             </div>
+
+            {/* Combat Field */}
+            <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-center gap-16 md:gap-8 my-10">
+
+                {/* Local Player (Ally) */}
+                <div className="flex flex-col items-center w-full md:w-1/2">
+                    <h3 className="text-xl font-bold mb-6 text-blue-400">{localNickname}</h3>
+                    {activeAlly ? (
+                        <div className="relative group flex flex-col items-center">
+                            <HealthBar currentHp={activeAlly.stats.currentHp} maxHp={activeAlly.stats.maxHp} />
+                            <div className="h-48 w-48 mt-8 relative">
+                                <img
+                                    src={activeAlly.spriteUrl}
+                                    alt={activeAlly.name}
+                                    className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(37,99,235,0.3)] select-none"
+                                />
+                            </div>
+                            <span className="mt-4 font-bold text-lg uppercase tracking-wide">{activeAlly.name}</span>
+                        </div>
+                    ) : (
+                        <span className="text-red-500 font-bold opacity-50 h-48 flex items-center">TEAM DEFEATED</span>
+                    )}
+                </div>
+
+                <div className="hidden md:flex flex-col items-center justify-center opacity-30 px-8">
+                    <span className="text-4xl font-black italic">VS</span>
+                </div>
+
+                {/* Opponent Player */}
+                <div className="flex flex-col items-center w-full md:w-1/2">
+                    <h3 className="text-xl font-bold mb-6 text-red-400">{opponent?.nickname || 'Rival'}</h3>
+                    {activeOpponent ? (
+                        <div className="relative group flex flex-col items-center">
+                            <HealthBar currentHp={activeOpponent.stats.currentHp} maxHp={activeOpponent.stats.maxHp} />
+                            <div className="h-48 w-48 mt-8 relative">
+                                <img
+                                    src={activeOpponent.spriteUrl}
+                                    alt={activeOpponent.name}
+                                    // Mirror the sprite to face left
+                                    className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(239,68,68,0.3)] scale-x-[-1] select-none"
+                                />
+                            </div>
+                            <span className="mt-4 font-bold text-lg uppercase tracking-wide">{activeOpponent.name}</span>
+                        </div>
+                    ) : (
+                        <span className="text-red-500 font-bold opacity-50 h-48 flex items-center">TEAM DEFEATED</span>
+                    )}
+                </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="mb-12">
+                <button
+                    onClick={emitAttack}
+                    disabled={!isMyTurn || !activeAlly || !activeOpponent}
+                    className={`relative overflow-hidden w-64 h-16 rounded-xl font-black tracking-widest text-lg transition-all duration-300 ease-out 
+                        ${isMyTurn
+                            ? 'bg-primary text-white hover:scale-105 hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] cursor-pointer'
+                            : 'bg-card text-muted-foreground border border-muted-foreground opacity-50 cursor-not-allowed'
+                        }`}
+                >
+                    FIGHT
+                </button>
+            </div>
+
         </div>
     );
 }

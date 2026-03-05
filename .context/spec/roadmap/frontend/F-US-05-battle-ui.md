@@ -1,6 +1,6 @@
 # F-US-05: Interfaz de Batalla Activa (HP y Sprites)
 
-**Estado:** [ ] TODO
+**Estado:** [x] DONE
 
 ## Descripción
 Como jugador inmersivo, deseo ver las barras de HP reactivas, los sprites grandes y el botón principal de Ataque. Separado entre oponente y aliado.

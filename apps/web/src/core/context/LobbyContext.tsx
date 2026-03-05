@@ -11,6 +11,7 @@ interface LobbyContextValue {
     players: Player[];
     requestTeam: () => void;
     emitReady: () => void;
+    emitAttack: () => void;
     connectAndJoin: (nickname: string) => void;
     disconnect: () => void;
     currentTurnPlayerId: string | null;
@@ -31,6 +32,12 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [currentTurnPlayerId, setCurrentTurnPlayerId] = useState<string | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
+    const turnPlayerIdRef = useRef<string | null>(null);
+
+    // Keep ref in sync for closure access in socket listeners
+    useEffect(() => {
+        turnPlayerIdRef.current = currentTurnPlayerId;
+    }, [currentTurnPlayerId]);
 
     const requestTeam = () => {
         if (socketRef.current) {
@@ -41,6 +48,12 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const emitReady = () => {
         if (socketRef.current) {
             socketRef.current.emit('ready');
+        }
+    };
+
+    const emitAttack = () => {
+        if (socketRef.current) {
+            socketRef.current.emit('attack');
         }
     };
 
@@ -72,6 +85,36 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         newSocket.on('battle_start', (data: { currentTurnPlayerId: string }) => {
             setLobbyStatus('battling'); // Ensure state reflects battle locally
             setCurrentTurnPlayerId(data.currentTurnPlayerId);
+        });
+
+        newSocket.on('turn_result', (data: any) => {
+            setPlayers(prevPlayers => prevPlayers.map(p => {
+                // If this player was NOT the attacker, they are the defender receiving damage
+                if (p.id !== turnPlayerIdRef.current) {
+                    const newTeam = [...(p.team || [])];
+                    const activeIdx = newTeam.findIndex(poke => !poke.isDefeated);
+                    if (activeIdx !== -1) {
+                        const updatedPoke = { ...newTeam[activeIdx] };
+                        updatedPoke.stats = { ...updatedPoke.stats, currentHp: data.remainingHp };
+                        if (data.isDefeated) {
+                            updatedPoke.isDefeated = true;
+                        }
+                        newTeam[activeIdx] = updatedPoke;
+                    }
+                    return { ...p, team: newTeam };
+                }
+                return p;
+            }));
+
+            if (!data.matchFinished) {
+                setCurrentTurnPlayerId(data.nextTurnPlayerId);
+            }
+        });
+
+        newSocket.on('battle_end', () => {
+            setLobbyStatus('finished');
+            setCurrentTurnPlayerId(null);
+            // Optional: you can store the winner locally or handle routing
         });
 
         setSocket(newSocket);
@@ -107,6 +150,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         players,
         requestTeam,
         emitReady,
+        emitAttack,
         connectAndJoin,
         disconnect,
         currentTurnPlayerId
