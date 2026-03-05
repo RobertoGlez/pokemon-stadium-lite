@@ -26,7 +26,7 @@ interface LobbyContextValue {
 const LobbyContext = createContext<LobbyContextValue | undefined>(undefined);
 
 const getBackendUrl = () => {
-    return localStorage.getItem('backendUrl') || 'http://localhost:8080';
+    return localStorage.getItem('backendUrl') || import.meta.env.VITE_API_BACKEND || 'http://localhost:8080';
 };
 
 export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

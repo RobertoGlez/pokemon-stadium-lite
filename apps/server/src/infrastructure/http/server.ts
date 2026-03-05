@@ -11,6 +11,14 @@ export const buildServer = async (): Promise<FastifyInstance> => {
         logger: true,
     });
 
+    // Add hook to support Chrome's Private Network Access (PNA) for localhost testing from cloud instances
+    app.addHook('onSend', (request, reply, payload, done) => {
+        if (request.headers['access-control-request-private-network']) {
+            reply.header('Access-Control-Allow-Private-Network', 'true');
+        }
+        done();
+    });
+
     // Habilitamos CORS sin restricciones para evitar problemas con la app web local e IPs locales
     await app.register(cors, {
         origin: '*',
@@ -29,6 +37,18 @@ export const buildServer = async (): Promise<FastifyInstance> => {
             cors: {
                 origin: '*',
                 methods: ['GET', 'POST']
+            }
+        });
+
+        io.engine.on("initial_headers", (headers: any, req: any) => {
+            if (req.headers["access-control-request-private-network"]) {
+                headers["Access-Control-Allow-Private-Network"] = "true";
+            }
+        });
+
+        io.engine.on("headers", (headers: any, req: any) => {
+            if (req.headers["access-control-request-private-network"]) {
+                headers["Access-Control-Allow-Private-Network"] = "true";
             }
         });
 

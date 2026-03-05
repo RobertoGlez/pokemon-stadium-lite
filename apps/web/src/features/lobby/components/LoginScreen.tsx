@@ -20,7 +20,7 @@ export function LoginScreen() {
 
     useEffect(() => {
         // Load saved config
-        const savedUrl = localStorage.getItem('backendUrl') || 'http://localhost:8080';
+        const savedUrl = localStorage.getItem('backendUrl') || import.meta.env.VITE_API_BACKEND || 'http://localhost:8080';
         setServerUrl(savedUrl);
         // Initial silent validation
         if (savedUrl) {
@@ -140,7 +140,7 @@ export function LoginScreen() {
                                     }}
                                     onBlur={handleBlur}
                                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
-                                    placeholder="http://localhost:8080"
+                                    placeholder={import.meta.env.VITE_API_BACKEND || "http://localhost:8080"}
                                 />
                                 <div className={`absolute right-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-colors duration-300 ${statusDotClass}`} />
                             </div>
@@ -191,8 +191,8 @@ export function LoginScreen() {
                                     onBlur={handleNicknameBlur}
                                     maxLength={15}
                                     className={`w-full h-12 px-4 pr-10 rounded-xl border bg-background text-foreground focus:outline-none focus:ring-1 transition-all font-medium ${nicknameError
-                                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                                            : 'border-border focus:border-primary focus:ring-primary'
+                                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                                        : 'border-border focus:border-primary focus:ring-primary'
                                         }`}
                                     placeholder="Ej: ash-1"
                                 />
