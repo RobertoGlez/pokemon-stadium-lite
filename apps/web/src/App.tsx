@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { LobbyProvider } from './core/context/LobbyContext';
 import { LoginScreen } from './features/lobby/components/LoginScreen';
 import { LobbyRoom } from './features/lobby/components/LobbyRoom';
+import { BattleArena } from './features/battle/components/BattleArena';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginScreen />} />
             <Route path="/lobby" element={<LobbyRoom />} />
+            <Route path="/battle" element={<BattleArena />} />
           </Routes>
         </BrowserRouter>
       </LobbyProvider>

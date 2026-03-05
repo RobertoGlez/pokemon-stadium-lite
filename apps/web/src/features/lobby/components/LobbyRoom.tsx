@@ -7,18 +7,26 @@ import { PokemonCard } from '../../../shared/components/pokemon/PokemonCard';
 
 export function LobbyRoom() {
     const navigate = useNavigate();
-    const { players, localNickname, disconnect, isConnected, requestTeam } = useLobby();
+    const { players, localNickname, disconnect, isConnected, requestTeam, emitReady, lobbyStatus } = useLobby();
     const waitingForOpponent = players.length < 2;
 
     const localPlayer = players.find(p => p.nickname === localNickname);
     const hasTeam = localPlayer?.team && localPlayer.team.length > 0;
+    const isReadyLocally = localPlayer?.isReady === true;
 
-    // Guard route
+    // Guard route to Login
     useEffect(() => {
         if (!isConnected) {
             navigate('/');
         }
     }, [isConnected, navigate]);
+
+    // Transition to Battle Arena when match officially starts
+    useEffect(() => {
+        if (lobbyStatus === 'battling') {
+            navigate('/battle');
+        }
+    }, [lobbyStatus, navigate]);
 
     if (!isConnected) return null;
 
@@ -82,11 +90,23 @@ export function LobbyRoom() {
                             </div>
 
                             <button
-                                className="mt-8 relative group overflow-hidden bg-background border border-primary text-primary hover:text-white hover:border-transparent transition-all duration-300 ease-out px-10 py-3 rounded-xl font-bold tracking-wide flex items-center gap-2 hover:scale-105 hover:shadow-[0_0_25px_rgba(37,99,235,0.5)]"
+                                onClick={emitReady}
+                                disabled={isReadyLocally || waitingForOpponent}
+                                className={`mt-8 relative group overflow-hidden bg-background border border-primary text-primary transition-all duration-300 ease-out px-10 py-3 rounded-xl font-bold tracking-wide flex items-center gap-2 
+                                    ${isReadyLocally || waitingForOpponent
+                                        ? 'opacity-50 cursor-not-allowed bg-card border-muted-foreground text-muted-foreground'
+                                        : 'hover:text-white hover:border-transparent hover:scale-105 hover:shadow-[0_0_25px_rgba(37,99,235,0.5)]'
+                                    }`}
                             >
-                                <div className="absolute inset-0 w-full h-full bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0" />
-                                <CheckSquare className="w-5 h-5 relative z-10 transition-transform group-hover:scale-110 duration-300" />
-                                <span className="relative z-10 tracking-widest">READY FOR BATTLE</span>
+                                {!isReadyLocally && !waitingForOpponent && (
+                                    <div className="absolute inset-0 w-full h-full bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0" />
+                                )}
+
+                                <CheckSquare className={`w-5 h-5 relative z-10 transition-transform ${isReadyLocally || waitingForOpponent ? '' : 'group-hover:scale-110 duration-300'}`} />
+
+                                <span className="relative z-10 tracking-widest">
+                                    {isReadyLocally ? 'WAITING FOR OPPONENT...' : 'READY FOR BATTLE'}
+                                </span>
                             </button>
                         </div>
                     )}

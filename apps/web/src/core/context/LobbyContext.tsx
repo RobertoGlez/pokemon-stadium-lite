@@ -10,8 +10,10 @@ interface LobbyContextValue {
     lobbyStatus: 'waiting' | 'ready' | 'battling' | 'finished' | 'idle';
     players: Player[];
     requestTeam: () => void;
+    emitReady: () => void;
     connectAndJoin: (nickname: string) => void;
     disconnect: () => void;
+    currentTurnPlayerId: string | null;
 }
 
 const LobbyContext = createContext<LobbyContextValue | undefined>(undefined);
@@ -26,12 +28,19 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [localNickname, setLocalNickname] = useState('');
     const [lobbyStatus, setLobbyStatus] = useState<'waiting' | 'ready' | 'battling' | 'finished' | 'idle'>('idle');
     const [players, setPlayers] = useState<Player[]>([]);
+    const [currentTurnPlayerId, setCurrentTurnPlayerId] = useState<string | null>(null);
 
     const socketRef = useRef<Socket | null>(null);
 
     const requestTeam = () => {
         if (socketRef.current) {
             socketRef.current.emit('assign_pokemon');
+        }
+    };
+
+    const emitReady = () => {
+        if (socketRef.current) {
+            socketRef.current.emit('ready');
         }
     };
 
@@ -60,6 +69,11 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setPlayers(data.players || []);
         });
 
+        newSocket.on('battle_start', (data: { currentTurnPlayerId: string }) => {
+            setLobbyStatus('battling'); // Ensure state reflects battle locally
+            setCurrentTurnPlayerId(data.currentTurnPlayerId);
+        });
+
         setSocket(newSocket);
         socketRef.current = newSocket;
     };
@@ -74,6 +88,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setLobbyStatus('idle');
         setPlayers([]);
         setLocalNickname('');
+        setCurrentTurnPlayerId(null);
     };
 
     useEffect(() => {
@@ -91,8 +106,10 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         lobbyStatus,
         players,
         requestTeam,
+        emitReady,
         connectAndJoin,
-        disconnect
+        disconnect,
+        currentTurnPlayerId
     };
 
     return (
