@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
       lobbyProvider.clearJoinError();
       lobbyProvider.connectAndJoin(
         _urlController.text.trim(),
-        _nicknameController.text.trim().toLowerCase(),
+        _nicknameController.text.trim(),
       );
     }
   }

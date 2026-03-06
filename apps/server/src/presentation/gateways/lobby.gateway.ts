@@ -29,9 +29,11 @@ export const initializeLobbyGateway = (io: Server) => {
             if (p) {
                 playersData.push({
                     id: p.id,
+                    socketId: p.socketId,  // Included so clients can match turn by socketId as fallback
                     nickname: p.nickname,
                     team: p.team || [],
-                    isReady: p.isReady || false
+                    isReady: p.isReady || false,
+                    joinedLobbyAt: p.joinedLobbyAt
                 });
             }
         }
@@ -130,6 +132,10 @@ export const initializeLobbyGateway = (io: Server) => {
                     };
                     io.to(battleState.lobbyId).emit('battle_start', battleStartPayload);
                     console.log(`[Socket] Emitted battle_start to room ${battleState.lobbyId}:`, JSON.stringify(battleStartPayload));
+
+                    // Broadcast updated lobby_status AFTER battle_start so clients have fresh
+                    // player data (including IDs) synchronized before the first attack.
+                    await broadcastLobbyStatus(battleState.lobbyId);
                 } else {
                     // Find lobby to broadcast updated status (maybe one player is ready)
                     const player = await playerRepo.findBySocketId(socket.id);

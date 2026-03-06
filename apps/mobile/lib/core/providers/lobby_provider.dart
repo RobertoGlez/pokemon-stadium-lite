@@ -45,7 +45,7 @@ class LobbyProvider extends ChangeNotifier {
 
   Player? get localPlayer {
     try {
-      return _players.firstWhere((p) => p.nickname == _localNickname);
+      return _players.firstWhere((p) => p.nickname.toLowerCase() == _localNickname.toLowerCase());
     } catch (_) {
       return null;
     }
@@ -53,13 +53,13 @@ class LobbyProvider extends ChangeNotifier {
 
   Player? get opponent {
     try {
-      return _players.firstWhere((p) => p.nickname != _localNickname);
+      return _players.firstWhere((p) => p.nickname.toLowerCase() != _localNickname.toLowerCase());
     } catch (_) {
       return null;
     }
   }
 
-  bool get isMyTurn => localPlayer?.id == _currentTurnPlayerId;
+  bool get isMyTurn => localPlayer?.id == _currentTurnPlayerId || (localPlayer?.socketId != null && localPlayer?.socketId == _currentTurnPlayerId);
 
   void connectAndJoin(String url, String nickname) {
     _localNickname = nickname;

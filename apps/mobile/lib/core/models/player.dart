@@ -2,6 +2,7 @@ import 'pokemon.dart';
 
 class Player {
   final String id;
+  final String? socketId;
   final String nickname;
   final DateTime joinedLobbyAt;
   final List<PokemonBase>? team;
@@ -9,6 +10,7 @@ class Player {
 
   Player({
     required this.id,
+    this.socketId,
     required this.nickname,
     required this.joinedLobbyAt,
     this.team,
@@ -18,6 +20,7 @@ class Player {
   factory Player.fromJson(Map<String, dynamic> json) {
     return Player(
       id: json['id'] ?? '',
+      socketId: json['socketId'],
       nickname: json['nickname'] ?? '',
       joinedLobbyAt: json['joinedLobbyAt'] != null 
           ? DateTime.parse(json['joinedLobbyAt'])
@@ -31,6 +34,7 @@ class Player {
 
   Map<String, dynamic> toJson() => {
         'id': id,
+        'socketId': socketId,
         'nickname': nickname,
         'joinedLobbyAt': joinedLobbyAt.toIso8601String(),
         'team': team?.map((e) => e.toJson()).toList(),
