@@ -99,7 +99,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 8,
                         mainAxisSpacing: 8,
-                        childAspectRatio: 1.55, // Much higher = much shorter cards
+                        mainAxisExtent: 76, // Fixed pixel height — eliminates empty space
                       ),
                       itemCount: localPlayer.team!.length,
                       itemBuilder: (context, index) {
