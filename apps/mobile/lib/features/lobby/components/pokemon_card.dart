@@ -64,7 +64,7 @@ class PokemonCard extends StatelessWidget {
                       ),
                       child: Text(
                         type.toUpperCase(),
-                        style: const TextStyle(fontSize: 6, color: AppColors.arenaBlue, fontWeight: FontWeight.black),
+                        style: const TextStyle(fontSize: 6, color: AppColors.arenaBlue, fontWeight: FontWeight.w900),
                       ),
                     )).toList(),
                   ),

@@ -73,7 +73,7 @@ export function LoginScreen() {
         }
 
         setFormError('');
-        connectAndJoin(nickname.trim());
+        connectAndJoin(nickname.trim(), serverUrl.trim());
     };
 
     const isFormValid = isValid && nickname.trim().length > 3 && !isChecking && !nicknameError && !isCheckingNickname;
