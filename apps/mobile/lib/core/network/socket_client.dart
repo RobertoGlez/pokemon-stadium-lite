@@ -21,7 +21,7 @@ class SocketClient {
     _logger.i('Connecting to Socket server at: $url');
 
     _socket = io.io(url, io.OptionBuilder()
-      .setTransports(['polling']) // App Engine Standard doesn't support WebSockets — polling only
+      .setTransports(['websocket']) // Use websocket to prevent session sharing between local emulators
       .disableAutoConnect()
       .enableForceNew()
       .build());
