@@ -12,7 +12,7 @@ interface LobbyContextValue {
     requestTeam: () => void;
     emitReady: () => void;
     emitAttack: () => void;
-    connectAndJoin: (nickname: string) => void;
+    connectAndJoin: (nickname: string, serverUrl?: string) => void;
     disconnect: () => void;
     currentTurnPlayerId: string | null;
     lastDamageEvent: { defenderId: string; damage: number; timestamp: number } | null;
@@ -87,13 +87,29 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const connectAndJoin = (nickname: string) => {
+    const connectAndJoin = (nickname: string, serverUrl?: string) => {
         if (socketRef.current) {
             socketRef.current.disconnect();
+            socketRef.current = null;
         }
 
-        const socketUrl = getBackendUrl();
-        const newSocket = io(socketUrl);
+        // Use the provided URL, or fall back to localStorage, or default
+        const socketUrl = serverUrl || getBackendUrl();
+
+        // Save the URL in use so future calls are consistent
+        if (serverUrl) {
+            localStorage.setItem('backendUrl', serverUrl);
+        }
+
+        const newSocket = io(socketUrl, {
+            // App Engine Standard does NOT support WebSockets.
+            // Using polling-only prevents the failed upgrade cycle that was
+            // causing a disconnect event + state reset on every connection.
+            transports: ['polling'],
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            timeout: 15000,
+        });
 
         newSocket.on('connect', () => {
             setIsConnected(true);

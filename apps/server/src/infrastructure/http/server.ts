@@ -38,7 +38,15 @@ export const buildServer = async (): Promise<FastifyInstance> => {
             cors: {
                 origin: '*',
                 methods: ['GET', 'POST']
-            }
+            },
+            // App Engine Standard does NOT support WebSockets.
+            // Forcing polling-only on both client and server prevents
+            // the failed WebSocket upgrade cycle that caused disconnects.
+            transports: ['polling'],
+            allowUpgrades: false,
+            // Ping settings tuned for Cloud latency
+            pingTimeout: 30000,
+            pingInterval: 25000,
         });
 
         io.engine.on("initial_headers", (headers: any, req: any) => {
