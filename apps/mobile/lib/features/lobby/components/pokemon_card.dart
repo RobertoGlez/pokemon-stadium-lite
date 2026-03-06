@@ -18,13 +18,13 @@ class PokemonCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         child: Row(
           children: [
             // Sprite
             SizedBox(
-              height: isLarge ? 72 : 52,
-              width: isLarge ? 72 : 52,
+              height: isLarge ? 60 : 44,
+              width: isLarge ? 60 : 44,
               child: pokemon.spriteUrl.isNotEmpty
                   ? Image.network(
                       pokemon.spriteUrl,
@@ -50,7 +50,7 @@ class PokemonCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   // Types
                   Wrap(
                     spacing: 3,
@@ -68,7 +68,7 @@ class PokemonCard extends StatelessWidget {
                       ),
                     )).toList(),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   // Stats
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,

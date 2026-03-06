@@ -3,6 +3,8 @@ import { LobbyRepository } from '../../domain/repositories/lobby.repository';
 import { BattleRepository } from '../../domain/repositories/battle.repository';
 import { BattleState } from '../../domain/entities/battle.entity';
 import { PokemonBase } from '../../domain/entities/pokemon.entity';
+import { PlayerModel } from '../../infrastructure/database/models/player.model';
+import { LobbyModel } from '../../infrastructure/database/models/lobby.model';
 
 export class ReadyPlayerUseCase {
     constructor(
@@ -12,18 +14,20 @@ export class ReadyPlayerUseCase {
     ) { }
 
     async execute(socketId: string): Promise<{ battleStarted: boolean, battleState?: BattleState }> {
-        // 1. Mark player as ready
-        const player = await this.playerRepository.findBySocketId(socketId);
-        if (!player || !player.id) {
+        // 1. Mark player as ready ATOMICALLY
+        const player = await PlayerModel.findOneAndUpdate(
+            { socketId },
+            { $set: { isReady: true } },
+            { new: true }
+        );
+
+        if (!player) {
             throw new Error('Player not found or missing ID');
         }
 
-        player.isReady = true;
-        await this.playerRepository.update(player.id, { isReady: true });
-
-        // 2. Check lobby
-        const lobby = await this.lobbyRepository.findByPlayerId(player.id);
-        if (!lobby || !lobby.id) {
+        // 2. Find lobby
+        const lobby = await LobbyModel.findOne({ players: player._id.toString() });
+        if (!lobby) {
             throw new Error('Lobby not found for player');
         }
 
@@ -33,61 +37,58 @@ export class ReadyPlayerUseCase {
         }
 
         // 3. Inspect if both players are ready
-        const player1 = await this.playerRepository.findById(lobby.players[0]);
-        const player2 = await this.playerRepository.findById(lobby.players[1]);
+        const p1 = await PlayerModel.findById(lobby.players[0]);
+        const p2 = await PlayerModel.findById(lobby.players[1]);
 
-        if (!player1 || !player2) {
+        if (!p1 || !p2) {
             throw new Error('Could not fetch both players in lobby');
         }
 
-        if (player1.isReady && player2.isReady) {
-            // Both are ready, start battle
-            await this.lobbyRepository.update(lobby.id, { status: 'battling' });
+        if (p1.isReady && p2.isReady) {
+            // ATOMIC CHECK: Attempt to transition lobby from 'waiting' or 'ready' to 'battling'
+            // This ensures only ONE of the two concurrent requests actually creates the battle
+            const updatedLobby = await LobbyModel.findOneAndUpdate(
+                { _id: lobby._id, status: { $ne: 'battling' } },
+                { $set: { status: 'battling' } },
+                { new: true }
+            );
+
+            // If updatedLobby is null, it means the OTHER request already set it to 'battling'
+            if (!updatedLobby) {
+                // The other concurrent request handles the battle creation and broadcast
+                return { battleStarted: false };
+            }
+
+            // --- We are the FIRST request to set it to 'battling'. We create the battle. ---
 
             // Ensure teams are valid
-            if (!player1.team || player1.team.length === 0 || !player2.team || player2.team.length === 0) {
+            if (!p1.team || p1.team.length === 0 || !p2.team || p2.team.length === 0) {
                 throw new Error('Players are ready but missing teams');
             }
 
-            // Check if a battle was already created by the other player's concurrent ready request
-            let battle = await this.battleRepository.findByLobbyId(lobby.id);
+            // Determine first turn: compare speed of Pokemon[0]
+            const p1Speed = p1.team[0].stats.speed;
+            const p2Speed = p2.team[0].stats.speed;
 
-            if (!battle) {
-                // Determine first turn: compare speed of Pokemon[0]
-                const p1Speed = player1.team[0].stats.speed;
-                const p2Speed = player2.team[0].stats.speed;
+            // In case of a tie, default to player 1
+            const currentTurnPlayerId = p1Speed >= p2Speed ? p1._id.toString() : p2._id.toString();
 
-                // In case of a tie, default to player 1
-                const currentTurnPlayerId = p1Speed >= p2Speed ? player1.id! : player2.id!;
+            // Assemble BattleState
+            const newBattle: Omit<BattleState, 'id'> = {
+                lobbyId: lobby._id.toString(),
+                teams: new Map<string, PokemonBase[]>([
+                    [p1._id.toString(), p1.team as unknown as PokemonBase[]],
+                    [p2._id.toString(), p2.team as unknown as PokemonBase[]]
+                ]),
+                activePokemonIndex: new Map<string, number>([
+                    [p1._id.toString(), 0],
+                    [p2._id.toString(), 0]
+                ]),
+                currentTurnPlayerId,
+                winnerId: null
+            };
 
-                // Assemble BattleState
-                const newBattle: Omit<BattleState, 'id'> = {
-                    lobbyId: lobby.id,
-                    teams: new Map<string, PokemonBase[]>([
-                        [player1.id!, player1.team],
-                        [player2.id!, player2.team]
-                    ]),
-                    activePokemonIndex: new Map<string, number>([
-                        [player1.id!, 0],
-                        [player2.id!, 0]
-                    ]),
-                    currentTurnPlayerId,
-                    winnerId: null
-                };
-
-                try {
-                    battle = await this.battleRepository.create(newBattle);
-                } catch (error: any) {
-                    if (error.code === 11000 || (error?.message?.includes('11000'))) {
-                        const existingBattle = await this.battleRepository.findByLobbyId(lobby.id);
-                        if (!existingBattle) throw new Error('E11000 but cannot find battle');
-                        battle = existingBattle;
-                    } else {
-                        throw error;
-                    }
-                }
-            }
-
+            const battle = await this.battleRepository.create(newBattle);
             return { battleStarted: true, battleState: battle };
         }
 

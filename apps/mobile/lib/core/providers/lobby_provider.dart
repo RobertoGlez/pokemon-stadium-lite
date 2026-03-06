@@ -45,7 +45,7 @@ class LobbyProvider extends ChangeNotifier {
 
   Player? get localPlayer {
     try {
-      return _players.firstWhere((p) => p.nickname == _localNickname);
+      return _players.firstWhere((p) => p.nickname.toLowerCase() == _localNickname.toLowerCase());
     } catch (_) {
       return null;
     }
@@ -53,13 +53,13 @@ class LobbyProvider extends ChangeNotifier {
 
   Player? get opponent {
     try {
-      return _players.firstWhere((p) => p.nickname != _localNickname);
+      return _players.firstWhere((p) => p.nickname.toLowerCase() != _localNickname.toLowerCase());
     } catch (_) {
       return null;
     }
   }
 
-  bool get isMyTurn => localPlayer?.id == _currentTurnPlayerId;
+  bool get isMyTurn => localPlayer?.id == _currentTurnPlayerId || (localPlayer?.socketId != null && localPlayer?.socketId == _currentTurnPlayerId);
 
   void connectAndJoin(String url, String nickname) {
     _localNickname = nickname;
@@ -120,11 +120,12 @@ class LobbyProvider extends ChangeNotifier {
 
   void _handleTurnResult(TurnResultPayload result) {
     if (result.damage > 0) {
-      final attacker = _players.firstWhere((p) => p.id == result.attackerId);
-      final defender = _players.firstWhere((p) => p.id == result.defenderId);
-      
-      final attackerActive = attacker.team?.firstWhere((p) => !p.isDefeated);
-      final defenderActive = defender.team?.firstWhere((p) => !p.isDefeated);
+      // Use orElse to safely find active Pokémon
+      final attacker = _players.firstWhere((p) => p.id == result.attackerId, orElse: () => _players.first);
+      final defender = _players.firstWhere((p) => p.id == result.defenderId, orElse: () => _players.last);
+
+      final attackerActive = attacker.team?.where((p) => !p.isDefeated).firstOrNull;
+      final defenderActive = defender.team?.where((p) => !p.isDefeated).firstOrNull;
 
       if (attackerActive != null && defenderActive != null) {
         _appendLog('damage', '${attackerActive.name} atacó a ${defenderActive.name} por ${result.damage} de daño.');
@@ -138,11 +139,20 @@ class LobbyProvider extends ChangeNotifier {
       }
     }
 
-    // Update player HP and status locally for immediate feedback
+    // Update player HP — MUST happen before notifyListeners
     _updatePlayersHP(result);
-    
+
     if (!result.matchFinished) {
-       _currentTurnPlayerId = result.nextTurnPlayerId;
+      if (result.isDefeated) {
+        // Mirror the web app: delay turn update by 1200ms when a faint occurs
+        // to let local state become consistent before the next turn starts.
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          _currentTurnPlayerId = result.nextTurnPlayerId;
+          notifyListeners();
+        });
+      } else {
+        _currentTurnPlayerId = result.nextTurnPlayerId;
+      }
     }
     notifyListeners();
   }
@@ -151,12 +161,14 @@ class LobbyProvider extends ChangeNotifier {
     _players = _players.map((p) {
       if (p.id == result.defenderId) {
         final team = p.team?.map((poke) {
-          // Assuming the first non-defeated is the one that took damage
-          // This is a simplification, but works for the current engine logic
+          // Only update the FIRST non-defeated Pokémon (the active one)
+          // This is the one who took damage.
           if (!poke.isDefeated) {
             final newStats = PokemonStats(
               maxHp: poke.stats.maxHp,
-              currentHp: result.remainingHp,
+              // BUG FIX: If it fainted, clamp HP to 0 — don't use remainingHp
+              // which might not be 0 yet in the payload timing.
+              currentHp: result.isDefeated ? 0 : result.remainingHp,
               attack: poke.stats.attack,
               defense: poke.stats.defense,
               speed: poke.stats.speed,
@@ -167,9 +179,13 @@ class LobbyProvider extends ChangeNotifier {
               types: poke.types,
               stats: newStats,
               spriteUrl: poke.spriteUrl,
+              // BUG FIX: Only mark THIS specific Pokémon as defeated.
+              // The old code set isDefeated on every active Pokémon which
+              // caused firstWhere(!p.isDefeated) to find nothing next turn.
               isDefeated: result.isDefeated,
             );
           }
+          // All other Pokémon in the team remain unchanged
           return poke;
         }).toList();
         return Player(

@@ -205,9 +205,19 @@ class _BattleScreenState extends State<BattleScreen> {
                 backgroundColor: isMyTurn ? AppColors.arenaBlue : Colors.grey.withOpacity(0.1),
                 foregroundColor: isMyTurn ? Colors.white : AppColors.textSecondary,
               ),
-              child: Text(
-                isMyTurn ? '¡ATACAR!' : 'ESPERANDO RIVAL...',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isMyTurn ? '¡ATACAR!' : 'ESPERANDO RIVAL...',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2),
+                  ),
+                  if (!isMyTurn)
+                    Text(
+                      'L: ${lobby.localPlayer?.id.substring(0, 6)}... T: ${lobby.currentTurnPlayerId?.substring(0, 6)}...',
+                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                ],
               ),
             ),
           ],
