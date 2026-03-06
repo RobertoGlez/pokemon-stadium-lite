@@ -21,9 +21,12 @@ class SocketClient {
     _logger.i('Connecting to Socket server at: $url');
 
     _socket = io.io(url, io.OptionBuilder()
-      .setTransports(['websocket']) // Use websocket only for stability on web/mobile
-      .enableAutoConnect()
+      .setTransports(['polling']) // App Engine Standard doesn't support WebSockets — polling only
+      .disableAutoConnect()
+      .enableForceNew()
       .build());
+
+    _socket!.connect();
 
     _socket!.onConnect((_) => _logger.i('Connected to server'));
     _socket!.onDisconnect((_) => _logger.w('Disconnected from server'));

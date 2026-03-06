@@ -72,3 +72,48 @@ docker run -p 80:80 --env-file apps/web/.env pokemon-web
 ```
 
 Once running, you can access the game by opening `http://localhost` in your browser. Ensure the backend server is concurrently running so the Web App can connect to it properly.
+
+---
+
+## 📱 Running the Mobile App (Flutter)
+
+The mobile app is located in `apps/mobile` and is built with Flutter/Dart.
+
+### Prerequisites
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) installed (version 3.x or higher).
+- An Android emulator, iOS simulator, or physical device connected.
+- Run `flutter doctor` to verify your setup.
+
+### 1. Install dependencies
+
+```bash
+cd apps/mobile
+flutter pub get
+```
+
+### 2. Run the app
+
+```bash
+# Run in debug mode (auto-detects a connected device/emulator)
+flutter run
+
+# Run on a specific device (list devices first)
+flutter devices
+flutter run -d <device-id>
+
+# Run on Chrome (web mode)
+flutter run -d chrome
+```
+
+### 3. Configure the server URL
+
+On the login screen, enter the URL of the running backend:
+
+| Environment | URL |
+|---|---|
+| Local (Docker) | `http://localhost:8080` |
+| Local (physical device on same network) | `http://<your-machine-ip>:8080` |
+| Production (App Engine) | `https://your-project.uc.r.appspot.com` |
+
+> [!TIP]
+> If you're testing on a physical Android device, use your machine's local IP address instead of `localhost` (e.g. `http://192.168.1.X:8080`).
