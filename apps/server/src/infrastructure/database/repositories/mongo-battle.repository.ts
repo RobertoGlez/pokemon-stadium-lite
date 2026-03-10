@@ -31,6 +31,11 @@ export class MongoBattleRepository implements BattleRepository {
         return this.mapToEntity(updated);
     }
 
+    async findAll(): Promise<BattleState[]> {
+        const docs = await BattleModel.find({}).sort({ _id: -1 }).limit(50); // Fetch latest 50
+        return docs.map(doc => this.mapToEntity(doc));
+    }
+
     private mapToEntity(doc: any): BattleState {
         return {
             id: doc._id.toString(),
@@ -38,7 +43,8 @@ export class MongoBattleRepository implements BattleRepository {
             teams: doc.teams,
             activePokemonIndex: doc.activePokemonIndex,
             currentTurnPlayerId: doc.currentTurnPlayerId,
-            winnerId: doc.winnerId
+            winnerId: doc.winnerId,
+            battleLog: doc.battleLog || []
         };
     }
 }

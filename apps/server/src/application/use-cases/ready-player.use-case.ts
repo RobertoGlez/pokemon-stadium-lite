@@ -85,7 +85,13 @@ export class ReadyPlayerUseCase {
                     [p2._id.toString(), 0]
                 ]),
                 currentTurnPlayerId,
-                winnerId: null
+                winnerId: null,
+                battleLog: [{
+                    id: new Date().getTime().toString() + Math.random().toString(36).substr(2, 5),
+                    type: 'info',
+                    message: `¡La batalla ha comenzado!`,
+                    timestamp: new Date()
+                }]
             };
 
             const battle = await this.battleRepository.create(newBattle);

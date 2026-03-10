@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _urlController.text = 'http://127.0.0.1:8080'; // Default
+    _urlController.text = 'https://pokemon-server-api-433891638584.us-central1.run.app'; // Default
   }
 
   @override
@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _urlController,
                         decoration: const InputDecoration(
-                          hintText: 'http://localhost:8080',
+                          hintText: 'https://pokemon-server-api-433891638584.us-central1.run.app',
                           labelText: 'CONEXIÓN AL SERVIDOR',
                           floatingLabelBehavior: FloatingLabelBehavior.always,
                           labelStyle: TextStyle(

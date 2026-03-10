@@ -20,6 +20,13 @@ const PokemonStateSchema = new Schema({
     isDefeated: { type: Boolean, default: false }
 }, { _id: false });
 
+const BattleLogSchema = new Schema({
+    id: { type: String, required: true },
+    type: { type: String, enum: ['info', 'damage', 'defeat', 'switch', 'winner'], required: true },
+    message: { type: String, required: true },
+    timestamp: { type: Date, required: true }
+}, { _id: false });
+
 const BattleSchema: Schema = new Schema({
     lobbyId: { type: String, required: true, unique: true },
     teams: {
@@ -33,7 +40,11 @@ const BattleSchema: Schema = new Schema({
         default: {}
     },
     currentTurnPlayerId: { type: String, default: null },
-    winnerId: { type: String, default: null }
+    winnerId: { type: String, default: null },
+    battleLog: {
+        type: [BattleLogSchema],
+        default: []
+    }
 });
 
 export const BattleModel = mongoose.model<IBattleStateDocument>('Battle', BattleSchema);

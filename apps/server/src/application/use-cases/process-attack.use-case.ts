@@ -85,6 +85,14 @@ export class ProcessAttackUseCase {
         // 8. Apply damage
         defenderPokemon.stats.currentHp = Math.max(0, defenderPokemon.stats.currentHp - damage);
 
+        // Add damage log
+        battle.battleLog.push({
+            id: new Date().getTime().toString() + Math.random().toString(36).substr(2, 5),
+            type: 'damage',
+            message: `${attackerPokemon.name} atacó a ${defenderPokemon.name} por ${damage} de daño.`,
+            timestamp: new Date()
+        });
+
         // 9. Check defeat condition
         let isDefeated = false;
         let pokemonFainted = false;
@@ -97,18 +105,42 @@ export class ProcessAttackUseCase {
             isDefeated = true;
             pokemonFainted = true;
 
+            battle.battleLog.push({
+                id: new Date().getTime().toString() + Math.random().toString(36).substr(2, 5),
+                type: 'defeat',
+                message: `¡${defenderPokemon.name} fue derrotado!`,
+                timestamp: new Date()
+            });
+
             // T2: Find next Pokémon in the list that has isDefeated == false
             const nextIndex = defenderTeam.findIndex((p, i) => i !== activeDefenderIndex && !p.isDefeated);
             if (nextIndex !== -1) {
                 // T3: Assign new index to the ActivePokemonTracker in the DB
                 battle.activePokemonIndex.set(defenderId, nextIndex);
                 nextDefenderPokemon = defenderTeam[nextIndex];
+
+                const defenderPlayerName = (await this.playerRepository.findById(defenderId))?.nickname || 'El rival';
+                battle.battleLog.push({
+                    id: new Date().getTime().toString() + Math.random().toString(36).substr(2, 5),
+                    type: 'switch',
+                    message: `${defenderPlayerName} envía a ${nextDefenderPokemon.name}.`,
+                    timestamp: new Date()
+                });
+
             } else {
                 // B-US-08: No more Pokémon left -> Match Finished
                 matchFinished = true;
                 winnerId = attackerId;
                 battle.winnerId = attackerId;
                 battle.currentTurnPlayerId = null;
+
+                const attackerPlayerName = (await this.playerRepository.findById(attackerId))?.nickname || 'El retador';
+                battle.battleLog.push({
+                    id: new Date().getTime().toString() + Math.random().toString(36).substr(2, 5),
+                    type: 'winner',
+                    message: `¡${attackerPlayerName} ha ganado la batalla!`,
+                    timestamp: new Date()
+                });
 
                 lobby.status = 'finished';
                 await this.lobbyRepository.update(lobby.id!, { status: 'finished' });
@@ -123,12 +155,12 @@ export class ProcessAttackUseCase {
         // Update the defender's team in the map so Mongoose detects changes correctly
         battle.teams.set(defenderId, defenderTeam);
 
-        // 11. Save — always persist activePokemonIndex so the swap is durable
         const updatedBattle = await this.battleRepository.update(battle.id, {
             teams: battle.teams,
             activePokemonIndex: battle.activePokemonIndex,
             currentTurnPlayerId: battle.currentTurnPlayerId,
-            winnerId: battle.winnerId
+            winnerId: battle.winnerId,
+            battleLog: battle.battleLog
         });
 
         if (!updatedBattle) {
