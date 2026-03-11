@@ -295,7 +295,7 @@ export function LoginScreen() {
                         <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-muted-foreground/40'}`} />
                         <a href="#" className="hover:text-foreground transition-colors ml-2">Ayuda</a>
                     </div>
-                    <span className="text-[10px] text-muted-foreground/30 font-medium">Pokémon Stadium Lite v1.0.0</span>
+                    <span className="text-[10px] text-muted-foreground/30 font-medium">Pokémon Stadium Lite v{import.meta.env.VITE_APP_VERSION}</span>
                 </div>
 
             </div>

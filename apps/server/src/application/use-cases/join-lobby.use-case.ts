@@ -10,12 +10,22 @@ export class JoinLobbyUseCase {
     ) { }
 
     async execute(nickname: string, socketId: string, sessionData?: PlayerSession): Promise<{ lobby: Lobby; player: Player }> {
-        // 1. Check for existing player by nickname (Case insensitive or exactly as requested)
+        // 1. Check for existing player by nickname
         let player = await this.playerRepository.findByNickname(nickname);
 
         if (player && player.id) {
-            // We no longer throw NICKNAME_TAKEN here to allow session takeover
-            // if a player was stuck in 'isOnline' state or refreshed quickly.
+            // Returning player: first remove from any existing lobby to prevent stale memberships
+            const existingLobby = await this.lobbyRepository.findByPlayerId(player.id);
+            if (existingLobby && existingLobby.id) {
+                const remainingPlayers = existingLobby.players.filter(pId => pId !== player!.id);
+                // Only update waiting lobbies — don't touch battling/finished ones to avoid duplicate key errors
+                if (existingLobby.status === 'waiting') {
+                    await this.lobbyRepository.update(existingLobby.id, {
+                        players: remainingPlayers
+                    });
+                    console.log(`[JoinLobby] Removed returning player ${nickname} from stale lobby ${existingLobby.id}`);
+                }
+            }
 
             // Sync/Update existing player state for the new session
             const updatedSessions = player.sessions ? [...player.sessions] : [];
@@ -49,16 +59,12 @@ export class JoinLobbyUseCase {
             throw new Error('Failed to create player: no ID assigned');
         }
 
-        // 2. Find a waiting lobby
+        // 2. Find a waiting lobby (now safe — player is not in any lobby)
         let lobby = await this.lobbyRepository.findWaitingLobby();
 
         if (lobby) {
             // Lobby exists, add player
             lobby.players.push(player.id);
-
-            // If the lobby now has 2 players, we could optionally change its status
-            // However, business rules say: waiting = 2 players logged in, pending "ready"
-            // So status remains 'waiting' until they are both ready.
 
             const updatedLobby = await this.lobbyRepository.update(lobby.id!, {
                 players: lobby.players
