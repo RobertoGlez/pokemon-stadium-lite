@@ -112,11 +112,18 @@ export const initializeLobbyGateway = (io: Server) => {
                     if (lobby && lobby.id) {
                         // Remove the disconnected player from the lobby
                         const remainingPlayers = lobby.players.filter(pId => pId !== player.id);
-                        // If lobby had a battle in progress or is now empty, reset it to waiting
-                        const shouldReset = lobby.status === 'battling' || lobby.status === 'finished' || remainingPlayers.length === 0;
+                        
+                        // If lobby had a battle in progress, mark it as finished (abandoned)
+                        // We must NEVER reset battling/finished lobbies back to waiting,
+                        // otherwise BattleModel duplicate key errors occur on lobby reuse.
+                        let newStatus = lobby.status;
+                        if (lobby.status === 'battling') {
+                            newStatus = 'finished';
+                        }
+                        
                         await lobbyRepo.update(lobby.id, {
                             players: remainingPlayers,
-                            status: shouldReset ? 'waiting' : lobby.status
+                            status: newStatus
                         });
                         // Notify remaining player that opponent left (re-broadcast lobby state)
                         if (remainingPlayers.length > 0) {
@@ -201,12 +208,13 @@ export const initializeLobbyGateway = (io: Server) => {
                         io.to(turnResult.battleState.lobbyId).emit('battle_end', battleEndPayload);
                         console.log(`[Socket] Emitted battle_end to room ${turnResult.battleState.lobbyId}:`, JSON.stringify(battleEndPayload));
 
-                        // Reset lobby so next players can reuse it cleanly
+                        // Mark lobby as finished. We DO NOT reset to 'waiting'
+                        // because that would lead to BattleModel duplicate key errors when re-used.
                         await lobbyRepo.update(turnResult.battleState.lobbyId, {
-                            status: 'waiting',
+                            status: 'finished',
                             players: []
                         });
-                        console.log(`[Socket] Reset lobby ${turnResult.battleState.lobbyId} for next match.`);
+                        console.log(`[Socket] Marked lobby ${turnResult.battleState.lobbyId} as finished.`);
 
                         // Broadcast finished battle to all lobbies globally
                         await broadcastGlobalHistory();

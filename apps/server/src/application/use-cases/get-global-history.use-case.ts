@@ -6,6 +6,8 @@ export interface GlobalHistoryEntry {
     id: string;
     player1: string;
     player2: string;
+    p1Team: { name: string, spriteUrl: string, isDefeated: boolean }[];
+    p2Team: { name: string, spriteUrl: string, isDefeated: boolean }[];
     status: 'in_progress' | 'finished';
     winnerName?: string;
     createdAt: Date;
@@ -27,18 +29,33 @@ export class GetGlobalHistoryUseCase {
         for (const battle of battles) {
             if (!battle.id || !battle.lobbyId) continue;
 
-            // Find the underlying lobby to see if it's currently battling or finished
-            const lobby = await this.lobbyRepository.findById(battle.lobbyId);
-            if (!lobby) continue;
-
-            // Only show battles that are actually in progress or have finished
-            if (lobby.status !== 'battling' && lobby.status !== 'finished') {
-                continue;
+            // Determine if the battle is finished or in progress
+            let status: 'in_progress' | 'finished';
+            
+            if (battle.winnerId) {
+                status = 'finished';
+            } else {
+                // If not finished, check if it's actively battling in its lobby
+                const lobby = await this.lobbyRepository.findById(battle.lobbyId);
+                if (lobby && lobby.status === 'battling') {
+                    status = 'in_progress';
+                } else {
+                    // It's neither finished nor actively battling (e.g. abandoned), so we skip it
+                    continue;
+                }
             }
 
-            const status = lobby.status === 'battling' ? 'in_progress' : 'finished';
+            let playerIds: string[] = [];
+            if (battle.teams instanceof Map) {
+                playerIds = Array.from(battle.teams.keys());
+            } else if (battle.teams && typeof (battle.teams as any).keys === 'function') {
+                // Mongoose Types.Map
+                playerIds = Array.from((battle.teams as any).keys());
+            } else if (typeof battle.teams === 'object' && battle.teams !== null) {
+                // Plain old javascript object
+                playerIds = Object.keys(battle.teams);
+            }
 
-            const playerIds = Array.from(battle.teams.keys());
             if (playerIds.length < 2) continue;
 
             const p1 = await this.playerRepository.findById(playerIds[0]);
@@ -50,6 +67,10 @@ export class GetGlobalHistoryUseCase {
                 winnerName = winner?.nickname;
             }
 
+            // Map teams
+            const p1Team = p1?.team?.map(p => ({ name: p.name, spriteUrl: p.spriteUrl, isDefeated: !!p.isDefeated })) || [];
+            const p2Team = p2?.team?.map(p => ({ name: p.name, spriteUrl: p.spriteUrl, isDefeated: !!p.isDefeated })) || [];
+
             // Extract a rudimentary timestamp: If the battle has logs, use the first log timestamp.
             // Otherwise, fallback to now (Mongo ObjectIds can also provide creation time, but this is explicit)
             const createdAt = (battle.battleLog && battle.battleLog.length > 0)
@@ -60,6 +81,8 @@ export class GetGlobalHistoryUseCase {
                 id: battle.id,
                 player1: p1?.nickname || 'Desconocido',
                 player2: p2?.nickname || 'Desconocido',
+                p1Team,
+                p2Team,
                 status,
                 winnerName,
                 createdAt

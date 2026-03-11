@@ -40,6 +40,16 @@ export class MongoPlayerRepository implements PlayerRepository {
         await PlayerModel.updateMany({}, { isOnline: false, isReady: false });
     }
 
+    async markReadyBySocketId(socketId: string): Promise<Player | null> {
+        const updated = await PlayerModel.findOneAndUpdate(
+            { socketId },
+            { $set: { isReady: true } },
+            { new: true }
+        );
+        if (!updated) return null;
+        return this.mapToEntity(updated);
+    }
+
     private mapToEntity(doc: any): Player {
         return {
             id: doc._id.toString(),

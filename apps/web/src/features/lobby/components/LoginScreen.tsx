@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLobby } from '../../../core/context/LobbyContext';
-import { Server, User, ArrowRight, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Server, User, ArrowRight, Loader2, CheckCircle2, XCircle, History } from 'lucide-react';
 import { Globe } from '../../../shared/components/magicui/globe';
 import { useServerValidation } from '../hooks/useServerValidation';
 import { apiClient } from '../../../core/axios.client';
 import logo from '../../../assets/identity/logo.png';
+import { BattleHistoryModal } from './BattleHistoryModal';
 
 export function LoginScreen() {
     const [nickname, setNickname] = useState('');
@@ -14,6 +15,7 @@ export function LoginScreen() {
     const [nicknameError, setNicknameError] = useState('');
     const [isCheckingNickname, setIsCheckingNickname] = useState(false);
     const [isNicknameVerified, setIsNicknameVerified] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
 
     const navigate = useNavigate();
     const { connectAndJoin, isConnected, joinError, clearJoinError } = useLobby();
@@ -280,6 +282,14 @@ export function LoginScreen() {
 
                 {/* Footer */}
                 <div className="flex flex-col items-center mt-6">
+                    <button 
+                        type="button"
+                        onClick={() => setShowHistory(true)}
+                        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-white transition-colors mb-4 bg-[#1F2937]/30 hover:bg-[#1F2937] px-4 py-2 rounded-full border border-[#1F2937]"
+                    >
+                        <History className="w-4 h-4" />
+                        Ver historial de batallas
+                    </button>
                     <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground font-medium mb-2">
                         <span>Estado del Servidor</span>
                         <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-muted-foreground/40'}`} />
@@ -289,6 +299,12 @@ export function LoginScreen() {
                 </div>
 
             </div>
+
+            <BattleHistoryModal 
+                isOpen={showHistory} 
+                onClose={() => setShowHistory(false)} 
+                serverUrl={serverUrl} 
+            />
         </div>
     );
 }
