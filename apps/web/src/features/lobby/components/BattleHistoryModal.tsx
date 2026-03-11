@@ -81,8 +81,8 @@ export const BattleHistoryModal: React.FC<BattleHistoryModalProps> = ({ isOpen, 
                             <p className="text-sm">Aún no hay combates en este servidor.</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-4">
-                            {history.map((entry) => {
+                        <div className="flex flex-col border border-[#1F2937] rounded-[14px] overflow-hidden bg-[#0B0F1A]">
+                            {history.map((entry, index) => {
                                 const isFinished = entry.status === 'finished';
                                 const p1Won = isFinished && entry.winnerName === entry.player1;
                                 const p2Won = isFinished && entry.winnerName === entry.player2;
@@ -90,74 +90,57 @@ export const BattleHistoryModal: React.FC<BattleHistoryModalProps> = ({ isOpen, 
                                 return (
                                 <div 
                                     key={entry.id} 
-                                    className="p-4 rounded-xl border border-[#1F2937] bg-transparent flex flex-col gap-3"
+                                    className={`flex items-center justify-between py-3 px-3 sm:px-5 border-[#1F2937]/50 hover:bg-[#111827] transition-colors ${index !== history.length - 1 ? 'border-b' : ''}`}
                                 >
-                                    {/* Global Top info: Date and Status */}
-                                    <div className="flex justify-between items-center w-full px-1 mb-1">
-                                        <div className="flex items-center gap-2 text-[13px] text-[#9CA3AF] font-medium">
-                                            <Calendar className="w-4 h-4 opacity-70" />
-                                            <span>{new Date(entry.createdAt).toLocaleString(undefined, {
-                                                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                            }).replace(',', '')}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 bg-[#111827] px-3 py-1 rounded-full border border-[#1F2937]">
-                                            <span className={`w-1.5 h-1.5 rounded-full ${!isFinished ? 'bg-[#22C55E] animate-pulse drop-shadow-[0_0_4px_rgba(34,197,94,0.8)]' : 'bg-[#4B5563]'}`} />
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${!isFinished ? 'text-[#22C55E]' : 'text-[#9CA3AF]'}`}>
-                                                {!isFinished ? 'En curso' : 'Finalizado'}
-                                            </span>
+                                    {/* Player 1 Side (Left Extreme) */}
+                                    <div className="flex items-center gap-3 sm:gap-4 flex-1">
+                                        <span className={`text-[15px] sm:text-[17px] font-bold truncate max-w-[90px] sm:max-w-[140px] ${p1Won ? 'text-yellow-400' : isFinished ? 'text-[#9CA3AF]' : 'text-white'}`}>
+                                            {p1Won && <Crown className="inline w-3.5 h-3.5 text-yellow-500 mb-0.5 mr-1" />}
+                                            {entry.player1}
+                                        </span>
+                                        <div className="flex flex-col">
+                                            <div className="flex gap-1 items-center">
+                                                {entry.p1Team?.map((poke, i) => (
+                                                    <img key={i} src={poke.spriteUrl} alt={poke.name} title={poke.name}
+                                                        className={`w-5 h-5 object-contain mix-blend-screen ${poke.isDefeated ? 'grayscale opacity-30 mix-blend-luminosity' : ''}`} crossOrigin="anonymous" />
+                                                ))}
+                                                {(!entry.p1Team || entry.p1Team.length === 0) && (
+                                                    <span className="text-[10px] text-[#4B5563] italic w-5 text-center">?</span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 mt-1 text-[9px] sm:text-[10px] text-[#6B7280] font-medium uppercase tracking-wider">
+                                                <Calendar className="w-2.5 h-2.5 opacity-70" />
+                                                <span>{new Date(entry.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', minute: '2-digit', hour: '2-digit' }).replace(',', '')}</span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Verses Section */}
-                                    <div className="flex flex-row items-center justify-between gap-4 relative">
-                                        {/* Player 1 Sub-card */}
-                                        <div className={`flex flex-col items-center justify-center flex-1 h-[100px] rounded-[14px] ${p1Won ? 'bg-[#111827] border border-yellow-500/30' : 'bg-[#111827] border border-transparent'}`}>
-                                            <span className={`text-[16px] font-bold truncate max-w-[120px] ${p1Won ? 'text-yellow-400' : isFinished ? 'text-[#9CA3AF]' : 'text-[#F9FAFB]'}`}>
-                                                {entry.player1}
-                                            </span>
-                                            {isFinished && (
-                                                <span className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${p1Won ? 'text-yellow-500 flex items-center gap-1' : 'text-[#EF4444] flex items-center gap-1'}`}>
-                                                    {p1Won ? <><Crown className="w-3 h-3" /> Ganador</> : <>💀 Perdedor</>}
-                                                </span>
-                                            )}
-                                            {/* Pokemon team */}
-                                            <div className="flex gap-2 justify-center items-center mt-2">
-                                                {entry.p1Team?.map((poke, i) => (
-                                                    <img key={i} src={poke.spriteUrl} alt={poke.name} title={poke.name}
-                                                        className={`w-6 h-6 object-contain ${poke.isDefeated ? 'grayscale opacity-30 mix-blend-luminosity' : ''}`} crossOrigin="anonymous" />
-                                                ))}
-                                                {(!entry.p1Team || entry.p1Team.length === 0) && (
-                                                    <span className="text-xs text-[#9CA3AF] italic flex items-center h-6">?</span>
-                                                )}
-                                            </div>
-                                        </div>
+                                    {/* Center VS */}
+                                    <div className="flex items-center justify-center shrink-0 px-2 sm:px-6">
+                                        <span className="text-[20px] sm:text-[24px] font-black italic text-[#374151]">VS</span>
+                                    </div>
 
-                                        {/* VS badge */}
-                                        <div className="flex flex-col items-center justify-center shrink-0">
-                                            <span className="text-[13px] font-bold italic text-[#9CA3AF]/60 lowercase">vs</span>
-                                        </div>
-
-                                        {/* Player 2 Sub-card */}
-                                        <div className={`flex flex-col items-center justify-center flex-1 h-[100px] rounded-[14px] ${p2Won ? 'bg-[#111827] border border-yellow-500/30' : 'bg-[#111827] border border-transparent'}`}>
-                                            <span className={`text-[16px] font-bold truncate max-w-[120px] ${p2Won ? 'text-yellow-400' : isFinished ? 'text-[#9CA3AF]' : 'text-[#F9FAFB]'}`}>
-                                                {entry.player2}
-                                            </span>
-                                            {isFinished && (
-                                                <span className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${p2Won ? 'text-yellow-500 flex items-center gap-1' : 'text-[#EF4444] flex items-center gap-1'}`}>
-                                                    {p2Won ? <><Crown className="w-3 h-3" /> Ganador</> : <>💀 Perdedor</>}
-                                                </span>
-                                            )}
-                                            {/* Pokemon team */}
-                                            <div className="flex gap-2 justify-center items-center mt-2">
+                                    {/* Player 2 Side (Right Extreme) */}
+                                    <div className="flex items-center justify-end gap-3 sm:gap-4 flex-1">
+                                        <div className="flex flex-col items-end">
+                                            <div className="flex gap-1 items-center justify-end">
                                                 {entry.p2Team?.map((poke, i) => (
                                                     <img key={i} src={poke.spriteUrl} alt={poke.name} title={poke.name}
-                                                        className={`w-6 h-6 object-contain ${poke.isDefeated ? 'grayscale opacity-30 mix-blend-luminosity' : ''}`} crossOrigin="anonymous" />
+                                                        className={`w-5 h-5 object-contain mix-blend-screen ${poke.isDefeated ? 'grayscale opacity-30 mix-blend-luminosity' : ''}`} crossOrigin="anonymous" />
                                                 ))}
                                                 {(!entry.p2Team || entry.p2Team.length === 0) && (
-                                                    <span className="text-xs text-[#9CA3AF] italic flex items-center h-6">?</span>
+                                                    <span className="text-[10px] text-[#4B5563] italic w-5 text-center">?</span>
                                                 )}
                                             </div>
+                                            <div className="flex items-center gap-1.5 mt-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${!isFinished ? 'bg-[#22C55E] animate-pulse drop-shadow-[0_0_4px_rgba(34,197,94,0.8)]' : 'bg-[#4B5563]'}`} />
+                                                <span className={!isFinished ? 'text-[#22C55E]' : 'text-[#6B7280]'}>{!isFinished ? 'En curso' : 'Finalizado'}</span>
+                                            </div>
                                         </div>
+                                        <span className={`text-[15px] sm:text-[17px] font-bold truncate max-w-[90px] sm:max-w-[140px] text-right ${p2Won ? 'text-yellow-400' : isFinished ? 'text-[#9CA3AF]' : 'text-white'}`}>
+                                            {entry.player2}
+                                            {p2Won && <Crown className="inline w-3.5 h-3.5 text-yellow-500 mb-0.5 ml-1" />}
+                                        </span>
                                     </div>
                                 </div>
                             )})}
