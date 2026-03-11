@@ -38,9 +38,18 @@ export function LoginScreen() {
         }
     }, [isConnected, navigate]);
 
+    const DEFAULT_URL = import.meta.env.VITE_API_BACKEND || 'http://localhost:8080';
+
     const handleBlur = () => {
-        if (serverUrl.trim()) {
-            validateServer(serverUrl.trim());
+        const trimmed = serverUrl.trim();
+        if (!trimmed) {
+            // Clear saved reference and fall back to default
+            localStorage.removeItem('backendUrl');
+            setServerUrl(DEFAULT_URL);
+            setIsValid(false);
+            validateServer(DEFAULT_URL);
+        } else {
+            validateServer(trimmed);
         }
     };
 
