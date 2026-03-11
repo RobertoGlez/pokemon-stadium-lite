@@ -46,12 +46,15 @@ async function deploy() {
         if (!fs.existsSync(packageJsonPath)) {
             throw new Error('package.json not found in the server directory.');
         }
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const version = packageJson.version;
 
         const projectId = 'pokemon-sbx';
         const region = 'us-central1';
         const repoName = 'pokemon-repo';
         const serviceName = 'pokemon-server-api';
         const imageTag = `${region}-docker.pkg.dev/${projectId}/${repoName}/pokemon-server`;
+        const imageTagWithVersion = `${imageTag}:${version}`;
 
         log(`Target Project: ${projectId}`);
         log(`Target Service: ${serviceName}`);
@@ -66,6 +69,7 @@ async function deploy() {
         await runCommand('gcloud', [
             'builds', 'submit',
             '--config', 'cloudbuild.yaml',
+            `--substitutions=_VERSION=${version}`,
             '.',
             `--project=${projectId}`
         ], rootDir);
@@ -106,6 +110,12 @@ async function deploy() {
         } else {
             serviceYamlContent = serviceYamlContent.replace(/^\s*# ENV_VARIABLES_INJECTION_POINT\s*$/m, '');
         }
+
+        // Force the new version tag so Cloud Run redeploys the fresh image
+        serviceYamlContent = serviceYamlContent.replace(
+            /image:\s*us-central1-docker\.pkg\.dev\/pokemon-sbx\/pokemon-repo\/pokemon-server.*/g,
+            `image: ${imageTagWithVersion}`
+        );
 
         const tempServiceYamlPath = path.join(serverDir, 'service.deploy.yaml');
         fs.writeFileSync(tempServiceYamlPath, serviceYamlContent);

@@ -13,10 +13,11 @@ export function LoginScreen() {
     const [formError, setFormError] = useState('');
     const [nicknameError, setNicknameError] = useState('');
     const [isCheckingNickname, setIsCheckingNickname] = useState(false);
+    const [isNicknameVerified, setIsNicknameVerified] = useState(false);
 
     const navigate = useNavigate();
     const { connectAndJoin, isConnected, joinError, clearJoinError } = useLobby();
-    const { validateServer, isValid, isChecking, error: serverError, metadata } = useServerValidation();
+    const { validateServer, isValid, isChecking, error: serverError, metadata, setIsValid } = useServerValidation();
 
     useEffect(() => {
         // Load saved config
@@ -42,7 +43,10 @@ export function LoginScreen() {
     };
 
     const handleNicknameBlur = async () => {
-        if (!nickname.trim() || nickname.trim().length <= 3) return;
+        if (!nickname.trim() || nickname.trim().length <= 3) {
+            setIsNicknameVerified(false);
+            return;
+        }
         setIsCheckingNickname(true);
         setNicknameError('');
         try {
@@ -51,16 +55,23 @@ export function LoginScreen() {
             );
             if (!res.data.available) {
                 setNicknameError(res.data.message || 'Este apodo ya está en uso.');
+                setIsNicknameVerified(false);
+            } else {
+                setIsNicknameVerified(true);
             }
         } catch {
             // If the check fails (server down etc.) we allow the attempt
+            setIsNicknameVerified(true); // Optimistic fallback if server checking endpoint fails but main socket might work
         } finally {
             setIsCheckingNickname(false);
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const isFormValid = isValid && nickname.trim().length > 3 && !nicknameError && isNicknameVerified;
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('[LoginScreen] Submit pulsado. Validando antes de conectar...');
 
         if (!isValid) {
             setFormError('No puedes ingresar hasta configurar un servidor válido.');
@@ -72,11 +83,32 @@ export function LoginScreen() {
             return;
         }
 
+        if (nicknameError) {
+            setFormError(nicknameError);
+            return;
+        }
+
+        // Si la validación del blur no ha terminado, o si el blur disparó justo antes del click
+        // Hacemos una última verificación del nickname de manera síncrona aquí
+        setIsCheckingNickname(true);
+        try {
+            const res = await apiClient.get<{ available: boolean; message?: string }>(
+                `/api/players/check?nickname=${encodeURIComponent(nickname.trim())}`
+            );
+            if (!res.data.available) {
+                setNicknameError(res.data.message || 'Este apodo ya está en uso.');
+                setIsCheckingNickname(false);
+                return;
+            }
+        } catch {
+            // Ignorar el error si el servidor está caído (se manejará en la conexión socket)
+        }
+        setIsCheckingNickname(false);
+
         setFormError('');
+        console.log('[LoginScreen] Todo correcto, conectando...', { nickname: nickname.trim(), serverUrl: serverUrl.trim() });
         connectAndJoin(nickname.trim(), serverUrl.trim());
     };
-
-    const isFormValid = isValid && nickname.trim().length > 3 && !isChecking && !nicknameError && !isCheckingNickname;
     const currentError = formError || serverError || joinError || nicknameError;
 
     // Determine Status Dot Color
@@ -136,7 +168,8 @@ export function LoginScreen() {
                                     value={serverUrl}
                                     onChange={(e) => {
                                         setServerUrl(e.target.value);
-                                        if (isValid) setFormError('Has modificado la URL. Haz click fuera del texto para validarla nuevamente.');
+                                        if (isValid) setIsValid(false);
+                                        if (formError === 'Has modificado la URL. Haz click fuera del texto para validarla nuevamente.' || formError === 'No puedes ingresar hasta configurar un servidor válido.') setFormError('');
                                     }}
                                     onBlur={handleBlur}
                                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
@@ -153,11 +186,16 @@ export function LoginScreen() {
                                         <span>Conectando...</span>
                                     </div>
                                 ) : isValid && metadata ? (
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-green-500 font-medium bg-green-500/10 p-2 rounded-lg border border-green-500/20">
-                                        <span className="flex items-center gap-1 font-bold"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
-                                        <span>{metadata.serverName}</span>
-                                        <span>v{metadata.version}</span>
-                                        <span className="capitalize">{metadata.region}</span>
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-y-2 text-[11px] font-medium bg-[#111827] px-3 py-2.5 rounded-xl border border-[#1F2937]">
+                                        <div className="flex items-center gap-2 text-muted-foreground mr-2">
+                                            <span className="flex items-center gap-1 font-bold text-green-500"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
+                                            <span className="text-[#374151]">|</span>
+                                            <span className="truncate text-foreground">{metadata.serverName}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 ml-auto sm:ml-0 text-muted-foreground shrink-0">
+                                            <span className="px-1.5 py-0.5 rounded-md bg-[#1F2937]/60 border border-[#374151]/40 text-white font-semibold">v{metadata.version}</span>
+                                            <span className="px-1.5 py-0.5 rounded-md bg-[#1F2937]/50 border border-[#374151]/40 opacity-80">{metadata.region}</span>
+                                        </div>
                                     </div>
                                 ) : serverError && !isChecking && serverUrl ? (
                                     <div className="flex items-center gap-2 text-[11px] text-red-500 font-medium bg-red-500/10 p-2 rounded-lg border border-red-500/20">
@@ -184,6 +222,7 @@ export function LoginScreen() {
                                         const val = e.target.value.toLowerCase();
                                         if (/^[a-z0-9-]*$/.test(val)) {
                                             setNickname(val);
+                                            setIsNicknameVerified(false);
                                             if (joinError) clearJoinError();
                                             if (nicknameError) setNicknameError('');
                                         }
@@ -222,23 +261,29 @@ export function LoginScreen() {
 
                 {/* Connect Button */}
                 <button
-                    type="submit"
-                    form="login-form"
-                    disabled={!isFormValid}
-                    className={`w-full h-14 mt-auto flex items-center justify-center gap-2 font-semibold rounded-xl text-[15px] tracking-wide transition-all ${isFormValid
-                        ? 'bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] shadow-[0_4px_20px_rgba(37,99,235,0.4)]'
+                    type="button"
+                    onClick={(e) => {
+                        console.log('[LoginScreen] Clic detectado en el botón (onClick)');
+                        handleSubmit(e);
+                    }}
+                    className={`w-full h-14 mt-auto flex items-center justify-center gap-2 font-semibold rounded-xl text-[15px] tracking-wide transition-all ${
+                        isFormValid && !isChecking && !isCheckingNickname
+                        ? 'bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] shadow-[0_4px_20px_rgba(37,99,235,0.4)] cursor-pointer'
                         : 'bg-muted text-muted-foreground cursor-not-allowed border border-border/50'
                         }`}
                 >
-                    {isChecking ? 'VALIDANDO...' : 'CONECTAR AL ESTADIO'}
-                    {!isChecking && <ArrowRight className="w-5 h-5" />}
+                    {(isChecking || isCheckingNickname) ? 'VALIDANDO...' : 'CONECTAR AL ESTADIO'}
+                    {!(isChecking || isCheckingNickname) && <ArrowRight className="w-5 h-5" />}
                 </button>
 
                 {/* Footer */}
-                <div className="flex items-center justify-center gap-3 mt-6 text-xs text-muted-foreground font-medium">
-                    <span>Estado del Servidor</span>
-                    <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-muted-foreground/40'}`} />
-                    <a href="#" className="hover:text-foreground transition-colors ml-2">Ayuda</a>
+                <div className="flex flex-col items-center mt-6">
+                    <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground font-medium mb-2">
+                        <span>Estado del Servidor</span>
+                        <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-muted-foreground/40'}`} />
+                        <a href="#" className="hover:text-foreground transition-colors ml-2">Ayuda</a>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/30 font-medium">Pokémon Stadium Lite v1.0.0</span>
                 </div>
 
             </div>

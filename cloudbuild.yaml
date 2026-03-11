@@ -1,5 +1,7 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us-central1-docker.pkg.dev/pokemon-sbx/pokemon-repo/pokemon-server', '-f', 'apps/server/Dockerfile', '.']
+  args: ['build', '-t', 'us-central1-docker.pkg.dev/pokemon-sbx/pokemon-repo/pokemon-server:latest', '-t', 'us-central1-docker.pkg.dev/pokemon-sbx/pokemon-repo/pokemon-server:${_VERSION}', '-f', 'apps/server/Dockerfile', '.']
 timeout: '1200s'
-images: ['us-central1-docker.pkg.dev/pokemon-sbx/pokemon-repo/pokemon-server']
+images: 
+  - 'us-central1-docker.pkg.dev/pokemon-sbx/pokemon-repo/pokemon-server:latest'
+  - 'us-central1-docker.pkg.dev/pokemon-sbx/pokemon-repo/pokemon-server:${_VERSION}'
