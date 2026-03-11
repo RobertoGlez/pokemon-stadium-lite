@@ -132,6 +132,7 @@ class _BattleScreenState extends State<BattleScreen> {
           
           // Sprite with simple animation placeholder
           TweenAnimationBuilder(
+            key: ValueKey(pokemon.id),
             tween: Tween<double>(begin: 0, end: 1),
             duration: const Duration(seconds: 1),
             builder: (context, double value, child) {

@@ -39,11 +39,9 @@ export const buildServer = async (): Promise<FastifyInstance> => {
                 origin: '*',
                 methods: ['GET', 'POST']
             },
-            // App Engine Standard does NOT support WebSockets.
-            // Forcing polling-only on both client and server prevents
-            // the failed WebSocket upgrade cycle that caused disconnects.
-            transports: ['polling'],
-            allowUpgrades: false,
+            // Enabled WebSockets for Cloud Run deployment
+            transports: ['websocket', 'polling'],
+            allowUpgrades: true,
             // Ping settings tuned for Cloud latency
             pingTimeout: 30000,
             pingInterval: 25000,

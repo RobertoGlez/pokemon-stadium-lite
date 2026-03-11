@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/pokemon.dart';
 import '../models/battle.dart';
+import '../models/global_history.dart';
 import '../network/socket_client.dart';
 
 class BattleLogEntry {
@@ -29,6 +30,7 @@ class LobbyProvider extends ChangeNotifier {
   String? _currentTurnPlayerId;
   String? _winnerId;
   List<BattleLogEntry> _battleLog = [];
+  List<GlobalHistoryEntry> _globalHistory = [];
   bool _isRequestingTeam = false;
   String? _joinError;
 
@@ -39,6 +41,7 @@ class LobbyProvider extends ChangeNotifier {
   List<Player> get players => _players;
   String? get currentTurnPlayerId => _currentTurnPlayerId;
   List<BattleLogEntry> get battleLog => _battleLog;
+  List<GlobalHistoryEntry> get globalHistory => _globalHistory;
   bool get isRequestingTeam => _isRequestingTeam;
   String? get joinError => _joinError;
   String? get winnerId => _winnerId;
@@ -79,14 +82,30 @@ class LobbyProvider extends ChangeNotifier {
 
     _socketClient.on('lobby_status', (data) {
       final payload = LobbyStatusPayload.fromJson(data);
-      _lobbyStatus = payload.status;
+      
+      // Prevent unnecessary rebuilds during rapid polling updates
+      bool stateChanged = false;
+      if (_lobbyStatus != payload.status) {
+        _lobbyStatus = payload.status;
+        stateChanged = true;
+      }
+      
+      // Simple length check or more complex equality could be used.
+      // For now, if the payload has players, we update them.
       _players = payload.players;
+      stateChanged = true;
       
       // Clear requesting team state if team is assigned
       if (localPlayer?.team != null && localPlayer!.team!.isNotEmpty) {
-        _isRequestingTeam = false;
+        if (_isRequestingTeam) {
+          _isRequestingTeam = false;
+          stateChanged = true;
+        }
       }
-      notifyListeners();
+      
+      if (stateChanged) {
+        notifyListeners();
+      }
     });
 
     _socketClient.on('battle_start', (data) {
@@ -115,6 +134,13 @@ class LobbyProvider extends ChangeNotifier {
       _socketClient.disconnect();
       _isConnected = false;
       notifyListeners();
+    });
+
+    _socketClient.on('global_history', (data) {
+      if (data is List) {
+        _globalHistory = data.map((e) => GlobalHistoryEntry.fromJson(e)).toList();
+        notifyListeners();
+      }
     });
   }
 
@@ -160,10 +186,12 @@ class LobbyProvider extends ChangeNotifier {
   void _updatePlayersHP(TurnResultPayload result) {
     _players = _players.map((p) {
       if (p.id == result.defenderId) {
+        bool updatedActive = false;
         final team = p.team?.map((poke) {
           // Only update the FIRST non-defeated Pokémon (the active one)
           // This is the one who took damage.
-          if (!poke.isDefeated) {
+          if (!poke.isDefeated && !updatedActive) {
+            updatedActive = true;
             final newStats = PokemonStats(
               maxHp: poke.stats.maxHp,
               // BUG FIX: If it fainted, clamp HP to 0 — don't use remainingHp
@@ -180,8 +208,6 @@ class LobbyProvider extends ChangeNotifier {
               stats: newStats,
               spriteUrl: poke.spriteUrl,
               // BUG FIX: Only mark THIS specific Pokémon as defeated.
-              // The old code set isDefeated on every active Pokémon which
-              // caused firstWhere(!p.isDefeated) to find nothing next turn.
               isDefeated: result.isDefeated,
             );
           }
@@ -217,6 +243,10 @@ class LobbyProvider extends ChangeNotifier {
 
   void emitReady() {
     _socketClient.emit('ready');
+  }
+
+  void requestGlobalHistory() {
+    _socketClient.emit('request_global_history');
   }
 
   void emitAttack() {

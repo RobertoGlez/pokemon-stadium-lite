@@ -21,9 +21,10 @@ class SocketClient {
     _logger.i('Connecting to Socket server at: $url');
 
     _socket = io.io(url, io.OptionBuilder()
-      .setTransports(['polling']) // App Engine Standard doesn't support WebSockets — polling only
-      .disableAutoConnect()
+      .setTransports(['websocket']) // Force websocket for Cloud Run
+      .enableAutoConnect() // Crucial for connection recovery
       .enableForceNew()
+      .setExtraHeaders({'Connection': 'keep-alive'})
       .build());
 
     _socket!.connect();

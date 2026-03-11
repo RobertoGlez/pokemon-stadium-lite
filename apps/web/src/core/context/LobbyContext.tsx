@@ -102,10 +102,8 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         const newSocket = io(socketUrl, {
-            // App Engine Standard does NOT support WebSockets.
-            // Using polling-only prevents the failed upgrade cycle that was
-            // causing a disconnect event + state reset on every connection.
-            transports: ['polling'],
+            // Updated for Cloud Run which natively supports WebSockets
+            transports: ['websocket'],
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
             timeout: 15000,

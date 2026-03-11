@@ -7,6 +7,7 @@ import { MongoLobbyRepository } from '../../infrastructure/database/repositories
 import { MongoPlayerRepository } from '../../infrastructure/database/repositories/mongo-player.repository';
 import { MongoBattleRepository } from '../../infrastructure/database/repositories/mongo-battle.repository';
 import { PokemonApiAdapter } from '../../infrastructure/http/adapters/pokemon-api.adapter';
+import { GetGlobalHistoryUseCase } from '../../application/use-cases/get-global-history.use-case';
 
 export const initializeLobbyGateway = (io: Server) => {
     // Instantiate use case dependencies locally
@@ -18,6 +19,16 @@ export const initializeLobbyGateway = (io: Server) => {
     const assignPokemonUseCase = new AssignPokemonUseCase(playerRepo, lobbyRepo, pokemonApiAdapter);
     const readyPlayerUseCase = new ReadyPlayerUseCase(playerRepo, lobbyRepo, battleRepo);
     const processAttackUseCase = new ProcessAttackUseCase(playerRepo, lobbyRepo, battleRepo);
+    const getGlobalHistoryUseCase = new GetGlobalHistoryUseCase(battleRepo, playerRepo, lobbyRepo);
+
+    const broadcastGlobalHistory = async () => {
+        try {
+            const history = await getGlobalHistoryUseCase.execute();
+            io.emit('global_history', history);
+        } catch (error) {
+            console.error('[Socket] Error broadcasting global history:', error);
+        }
+    };
 
     const broadcastLobbyStatus = async (lobbyId: string) => {
         const lobby = await lobbyRepo.findById(lobbyId);
@@ -136,6 +147,9 @@ export const initializeLobbyGateway = (io: Server) => {
                     // Broadcast updated lobby_status AFTER battle_start so clients have fresh
                     // player data (including IDs) synchronized before the first attack.
                     await broadcastLobbyStatus(battleState.lobbyId);
+
+                    // Broadcast new active battle to all lobbies globally
+                    await broadcastGlobalHistory();
                 } else {
                     // Find lobby to broadcast updated status (maybe one player is ready)
                     const player = await playerRepo.findBySocketId(socket.id);
@@ -172,6 +186,9 @@ export const initializeLobbyGateway = (io: Server) => {
                 }
 
                 io.to(turnResult.battleState.lobbyId).emit('turn_result', turnResultPayload);
+                if (turnResult.battleState && turnResult.battleState.battleLog) {
+                    io.to(turnResult.battleState.lobbyId).emit('battle_history', { log: turnResult.battleState.battleLog });
+                }
                 console.log(`[Socket] Emitted turn_result to room ${turnResult.battleState.lobbyId}:`, JSON.stringify(turnResultPayload));
 
                 if (turnResult.matchFinished && turnResult.winnerId) {
@@ -190,11 +207,40 @@ export const initializeLobbyGateway = (io: Server) => {
                             players: []
                         });
                         console.log(`[Socket] Reset lobby ${turnResult.battleState.lobbyId} for next match.`);
+
+                        // Broadcast finished battle to all lobbies globally
+                        await broadcastGlobalHistory();
                     }
                 }
             } catch (error) {
                 // Silently log out of turn attacks or invalid actions
                 console.error(`[Socket] Attack rejected for ${socket.id}: ${(error as Error).message}`);
+            }
+        });
+
+        socket.on('request_battle_history', async () => {
+            try {
+                const player = await playerRepo.findBySocketId(socket.id);
+                if (player && player.id) {
+                    const lobby = await lobbyRepo.findByPlayerId(player.id);
+                    if (lobby && lobby.id && lobby.status === 'battling') {
+                        const battle = await battleRepo.findByLobbyId(lobby.id);
+                        if (battle && battle.battleLog) {
+                            socket.emit('battle_history', { log: battle.battleLog });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`[Socket] Error fetching history for ${socket.id}:`, error);
+            }
+        });
+
+        socket.on('request_global_history', async () => {
+            try {
+                const history = await getGlobalHistoryUseCase.execute();
+                socket.emit('global_history', history);
+            } catch (error) {
+                console.error(`[Socket] Error fetching global history for ${socket.id}:`, error);
             }
         });
     });

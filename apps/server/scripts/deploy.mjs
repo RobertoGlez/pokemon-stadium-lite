@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const serverDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(serverDir, '../..'); // Root of the monorepo
 const packageJsonPath = path.join(serverDir, 'package.json');
 
 function log(message) {
@@ -16,73 +17,103 @@ function errorLog(message) {
     console.error(`[ERROR] ${message}`);
 }
 
+async function runCommand(command, args, cwd) {
+    return new Promise((resolve, reject) => {
+        const processStr = `${command} ${args.join(' ')}`;
+        log(`Executing: ${processStr}`);
+
+        const childProcess = spawn(process.platform === 'win32' && command === 'npm' ? 'npm.cmd' : command, args, {
+            cwd,
+            shell: true,
+            stdio: 'inherit'
+        });
+
+        childProcess.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`Command failed with exit code ${code}: ${processStr}`));
+        });
+
+        childProcess.on('error', (err) => {
+            reject(new Error(`Failed to start process: ${err.message}`));
+        });
+    });
+}
+
 async function deploy() {
     try {
-        log('Starting deployment process...');
+        log('Starting Cloud Run deployment process...');
 
         if (!fs.existsSync(packageJsonPath)) {
             throw new Error('package.json not found in the server directory.');
         }
 
-        const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-        const rawVersion = packageData.version || '1.0.0';
-
-        // Google Cloud App Engine versions cannot contain dots. 
-        // e.g., 1.0.0 becomes 1-0-0
-        const parsedVersion = rawVersion.replace(/\./g, '-');
         const projectId = 'pokemon-sbx';
+        const region = 'us-central1';
+        const repoName = 'pokemon-repo';
+        const serviceName = 'pokemon-server-api';
+        const imageTag = `${region}-docker.pkg.dev/${projectId}/${repoName}/pokemon-server`;
 
         log(`Target Project: ${projectId}`);
-        log(`Target Version: ${parsedVersion} (from package.json v${rawVersion})`);
+        log(`Target Service: ${serviceName}`);
 
         log('Compiling TypeScript...');
-        const buildProcess = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'compile'], {
-            cwd: serverDir,
-            stdio: 'inherit',
-            shell: true
-        });
+        await runCommand('npm', ['run', 'compile'], serverDir);
+        log('Build successful.');
 
-        await new Promise((resolve, reject) => {
-            buildProcess.on('close', (code) => {
-                if (code === 0) resolve();
-                else reject(new Error(`Build failed with exit code ${code}`));
-            });
-            buildProcess.on('error', reject);
-        });
-        log('Build successful. Proceeding to upload...');
+        log('Step 1: Building and pushing Docker image via Cloud Build...');
+        // We run this from rootDir because Dockerfile needs monorepo context
+        // and we use the cloudbuild.yaml we created earlier.
+        await runCommand('gcloud', [
+            'builds', 'submit',
+            '--config', 'cloudbuild.yaml',
+            '.',
+            `--project=${projectId}`
+        ], rootDir);
 
+        log('Step 2: Parsing env_variables.yaml...');
+        let envVarsFlag = '';
+        const envVarsPath = path.join(serverDir, 'env_variables.yaml');
+        if (fs.existsSync(envVarsPath)) {
+            const lines = fs.readFileSync(envVarsPath, 'utf8').split('\n');
+            const parsedVars = [];
+            for (const line of lines) {
+                // Match keys inside env_variables block like:
+                //   KEY: "value"
+                const match = line.match(/^\s+([A-Z_a-z0-9]+):\s*"(.*)"\s*$/);
+                if (match) {
+                    parsedVars.push(`${match[1]}=${match[2]}`);
+                }
+            }
+            if (parsedVars.length > 0) {
+                envVarsFlag = `--set-env-vars=^;^${parsedVars.join(';')}`; // Using ; as delimiter because URLs contain commas
+                log(`Found ${parsedVars.length} environment variables to inject.`);
+            }
+        } else {
+            log('No env_variables.yaml found, proceeding without environment variables.');
+        }
+
+        log('Step 3: Deploying to Cloud Run...');
         const deployArgs = [
-            'app',
-            'deploy',
-            'app.yaml',
+            'run', 'deploy', serviceName,
+            `--image=${imageTag}`,
+            '--platform=managed',
+            `--region=${region}`,
+            '--allow-unauthenticated',
+            '--port=8080',
+            '--session-affinity', // Crucial for WebSockets
             `--project=${projectId}`,
-            `--version=${parsedVersion}`,
-            '--quiet' // Skips interactive prompts
+            '--quiet'
         ];
 
-        log('Executing gcloud command...');
-        log(`Command: gcloud ${deployArgs.join(' ')}`);
+        if (envVarsFlag) {
+            deployArgs.push(envVarsFlag);
+        }
 
-        const gcloudProcess = spawn('gcloud', deployArgs, {
-            cwd: serverDir,
-            shell: true,
-            stdio: 'inherit' // Pipes output directly to the terminal
-        });
+        await runCommand('gcloud', deployArgs, serverDir);
 
-        gcloudProcess.on('close', (code) => {
-            if (code === 0) {
-                log('Deployment completed successfully.');
-            } else {
-                errorLog(`Deployment failed with exit code ${code}.`);
-                process.exit(code);
-            }
-        });
-
-        gcloudProcess.on('error', (err) => {
-            errorLog(`Failed to start gcloud process. Is Google Cloud SDK installed and in PATH?`);
-            errorLog(`Details: ${err.message}`);
-            process.exit(1);
-        });
+        log('===================================================');
+        log('✅ Deployment to Cloud Run completed successfully!');
+        log('===================================================');
 
     } catch (error) {
         errorLog(`Deployment script aborted due to an error.`);
