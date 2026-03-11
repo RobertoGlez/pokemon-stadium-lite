@@ -36,6 +36,16 @@ export class MongoLobbyRepository implements LobbyRepository {
         return this.mapToEntity(updated);
     }
 
+    async transitionStatus(id: string, notInStatus: string, newStatus: string): Promise<Lobby | null> {
+        const updated = await LobbyModel.findOneAndUpdate(
+            { _id: id, status: { $ne: notInStatus } },
+            { $set: { status: newStatus } },
+            { new: true }
+        );
+        if (!updated) return null;
+        return this.mapToEntity(updated);
+    }
+
     private mapToEntity(doc: any): Lobby {
         return {
             id: doc._id.toString(),

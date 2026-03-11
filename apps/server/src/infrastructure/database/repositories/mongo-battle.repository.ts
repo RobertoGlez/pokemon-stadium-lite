@@ -4,7 +4,14 @@ import { BattleModel } from '../models/battle.model';
 
 export class MongoBattleRepository implements BattleRepository {
     async create(battleState: Omit<BattleState, 'id'>): Promise<BattleState> {
-        const created = await BattleModel.create(battleState);
+        const createDoc: any = { ...battleState };
+        if (battleState.teams instanceof Map) {
+            createDoc.teams = Object.fromEntries(battleState.teams);
+        }
+        if (battleState.activePokemonIndex instanceof Map) {
+            createDoc.activePokemonIndex = Object.fromEntries(battleState.activePokemonIndex);
+        }
+        const created = await BattleModel.create(createDoc);
         return this.mapToEntity(created);
     }
 

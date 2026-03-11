@@ -3,8 +3,6 @@ import { LobbyRepository } from '../../domain/repositories/lobby.repository';
 import { BattleRepository } from '../../domain/repositories/battle.repository';
 import { BattleState } from '../../domain/entities/battle.entity';
 import { PokemonBase } from '../../domain/entities/pokemon.entity';
-import { PlayerModel } from '../../infrastructure/database/models/player.model';
-import { LobbyModel } from '../../infrastructure/database/models/lobby.model';
 
 export class ReadyPlayerUseCase {
     constructor(
@@ -15,19 +13,15 @@ export class ReadyPlayerUseCase {
 
     async execute(socketId: string): Promise<{ battleStarted: boolean, battleState?: BattleState }> {
         // 1. Mark player as ready ATOMICALLY
-        const player = await PlayerModel.findOneAndUpdate(
-            { socketId },
-            { $set: { isReady: true } },
-            { new: true }
-        );
+        const player = await this.playerRepository.markReadyBySocketId(socketId);
 
-        if (!player) {
+        if (!player || !player.id) {
             throw new Error('Player not found or missing ID');
         }
 
         // 2. Find lobby
-        const lobby = await LobbyModel.findOne({ players: player._id.toString() });
-        if (!lobby) {
+        const lobby = await this.lobbyRepository.findByPlayerId(player.id);
+        if (!lobby || !lobby.id) {
             throw new Error('Lobby not found for player');
         }
 
@@ -37,21 +31,17 @@ export class ReadyPlayerUseCase {
         }
 
         // 3. Inspect if both players are ready
-        const p1 = await PlayerModel.findById(lobby.players[0]);
-        const p2 = await PlayerModel.findById(lobby.players[1]);
+        const p1 = await this.playerRepository.findById(lobby.players[0]);
+        const p2 = await this.playerRepository.findById(lobby.players[1]);
 
-        if (!p1 || !p2) {
+        if (!p1 || !p2 || !p1.id || !p2.id) {
             throw new Error('Could not fetch both players in lobby');
         }
 
         if (p1.isReady && p2.isReady) {
             // ATOMIC CHECK: Attempt to transition lobby from 'waiting' or 'ready' to 'battling'
             // This ensures only ONE of the two concurrent requests actually creates the battle
-            const updatedLobby = await LobbyModel.findOneAndUpdate(
-                { _id: lobby._id, status: { $ne: 'battling' } },
-                { $set: { status: 'battling' } },
-                { new: true }
-            );
+            const updatedLobby = await this.lobbyRepository.transitionStatus(lobby.id, 'battling', 'battling');
 
             // If updatedLobby is null, it means the OTHER request already set it to 'battling'
             if (!updatedLobby) {
@@ -71,18 +61,18 @@ export class ReadyPlayerUseCase {
             const p2Speed = p2.team[0].stats.speed;
 
             // In case of a tie, default to player 1
-            const currentTurnPlayerId = p1Speed >= p2Speed ? p1._id.toString() : p2._id.toString();
+            const currentTurnPlayerId = p1Speed >= p2Speed ? p1.id : p2.id;
 
             // Assemble BattleState
             const newBattle: Omit<BattleState, 'id'> = {
-                lobbyId: lobby._id.toString(),
+                lobbyId: lobby.id,
                 teams: new Map<string, PokemonBase[]>([
-                    [p1._id.toString(), p1.team as unknown as PokemonBase[]],
-                    [p2._id.toString(), p2.team as unknown as PokemonBase[]]
+                    [p1.id, p1.team as unknown as PokemonBase[]],
+                    [p2.id, p2.team as unknown as PokemonBase[]]
                 ]),
                 activePokemonIndex: new Map<string, number>([
-                    [p1._id.toString(), 0],
-                    [p2._id.toString(), 0]
+                    [p1.id, 0],
+                    [p2.id, 0]
                 ]),
                 currentTurnPlayerId,
                 winnerId: null,

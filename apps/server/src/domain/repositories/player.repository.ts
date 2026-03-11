@@ -8,4 +8,5 @@ export interface PlayerRepository {
     update(id: string, updates: Partial<Player>): Promise<Player | null>;
     deleteBySocketId(socketId: string): Promise<void>;
     resetAllOnlineStatus(): Promise<void>;
+    markReadyBySocketId(socketId: string): Promise<Player | null>;
 }
