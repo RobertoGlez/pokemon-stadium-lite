@@ -1,0 +1,31 @@
+# Declarative Cloud Run configuration
+# This file acts similarly to app.yaml for Cloud Run deployments.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: pokemon-server-api
+  labels:
+    cloud.googleapis.com/location: us-central1
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '20'
+        run.googleapis.com/sessionAffinity: 'true'
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containerConcurrency: 80
+      containers:
+        - image: us-central1-docker.pkg.dev/pokemon-sbx/pokemon-repo/pokemon-server
+          ports:
+            - containerPort: 8080
+              name: http1
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          # ENV_VARIABLES_INJECTION_POINT
+      timeoutSeconds: 300
