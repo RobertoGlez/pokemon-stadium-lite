@@ -186,15 +186,15 @@ export function LoginScreen() {
                                         <span>Conectando...</span>
                                     </div>
                                 ) : isValid && metadata ? (
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-y-2 text-[11px] font-medium bg-[#111827] px-3 py-2.5 rounded-xl border border-[#1F2937]">
-                                        <div className="flex items-center gap-2 text-muted-foreground mr-2">
-                                            <span className="flex items-center gap-1 font-bold text-green-500"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
-                                            <span className="text-[#374151]">|</span>
-                                            <span className="truncate text-foreground">{metadata.serverName}</span>
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-y-2 text-[11px] font-medium bg-green-500/10 px-3 py-2.5 rounded-xl border border-green-500/20 w-full">
+                                        <div className="flex items-center gap-2 text-green-500 w-full sm:w-auto">
+                                            <span className="flex items-center gap-1 font-bold whitespace-nowrap"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
+                                            <span className="text-green-500/50 shrink-0">|</span>
+                                            <span className="truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[200px]">{metadata.serverName}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 ml-auto sm:ml-0 text-muted-foreground shrink-0">
-                                            <span className="px-1.5 py-0.5 rounded-md bg-[#1F2937]/60 border border-[#374151]/40 text-white font-semibold">v{metadata.version}</span>
-                                            <span className="px-1.5 py-0.5 rounded-md bg-[#1F2937]/50 border border-[#374151]/40 opacity-80">{metadata.region}</span>
+                                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end text-green-500 shrink-0 mt-1 sm:mt-0">
+                                            <span className="px-1.5 py-0.5 rounded-md bg-green-500/20 border border-green-500/30 font-semibold">v{metadata.version}</span>
+                                            <span className="px-1.5 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 opacity-80">{metadata.region}</span>
                                         </div>
                                     </div>
                                 ) : serverError && !isChecking && serverUrl ? (
