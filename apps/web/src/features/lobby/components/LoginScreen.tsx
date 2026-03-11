@@ -186,15 +186,18 @@ export function LoginScreen() {
                                         <span>Conectando...</span>
                                     </div>
                                 ) : isValid && metadata ? (
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-y-2 text-[11px] font-medium bg-green-500/10 px-3 py-2.5 rounded-xl border border-green-500/20 w-full">
-                                        <div className="flex items-center gap-2 text-green-500 w-full sm:w-auto">
+                                    <div className="flex w-full bg-green-500/10 px-4 py-3 rounded-xl border border-green-500/20">
+                                        <div className="flex items-center gap-3 text-[11px] font-medium text-green-500 w-full">
                                             <span className="flex items-center gap-1 font-bold whitespace-nowrap"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
                                             <span className="text-green-500/50 shrink-0">|</span>
-                                            <span className="truncate max-w-[120px] xs:max-w-[150px] sm:max-w-[200px]">{metadata.serverName}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end text-green-500 shrink-0 mt-1 sm:mt-0">
-                                            <span className="px-1.5 py-0.5 rounded-md bg-green-500/20 border border-green-500/30 font-semibold">v{metadata.version}</span>
-                                            <span className="px-1.5 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 opacity-80">{metadata.region}</span>
+                                            <div className="flex flex-col gap-0.5 w-full">
+                                                <span className="truncate max-w-[180px] xs:max-w-[220px] sm:max-w-[280px]">{metadata.serverName}</span>
+                                                <div className="flex items-center gap-1.5 text-[10px] text-green-500/70 font-medium">
+                                                    <span>{metadata.region}</span>
+                                                    <span>-</span>
+                                                    <span>v{metadata.version}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 ) : serverError && !isChecking && serverUrl ? (
@@ -266,8 +269,7 @@ export function LoginScreen() {
                         console.log('[LoginScreen] Clic detectado en el botón (onClick)');
                         handleSubmit(e);
                     }}
-                    className={`w-full h-14 mt-auto flex items-center justify-center gap-2 font-semibold rounded-xl text-[15px] tracking-wide transition-all ${
-                        isFormValid && !isChecking && !isCheckingNickname
+                    className={`w-full h-14 mt-auto flex items-center justify-center gap-2 font-semibold rounded-xl text-[15px] tracking-wide transition-all ${isFormValid && !isChecking && !isCheckingNickname
                         ? 'bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.98] shadow-[0_4px_20px_rgba(37,99,235,0.4)] cursor-pointer'
                         : 'bg-muted text-muted-foreground cursor-not-allowed border border-border/50'
                         }`}
