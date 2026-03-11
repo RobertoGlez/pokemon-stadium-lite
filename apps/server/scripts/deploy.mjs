@@ -102,9 +102,9 @@ async function deploy() {
 
         // Replace the placeholder in service.yaml
         if (envYamlBlock) {
-            serviceYamlContent = serviceYamlContent.replace(/# ENV_VARIABLES_INJECTION_POINT/, envYamlBlock);
+            serviceYamlContent = serviceYamlContent.replace(/^\s*# ENV_VARIABLES_INJECTION_POINT\s*$/m, envYamlBlock);
         } else {
-            serviceYamlContent = serviceYamlContent.replace(/# ENV_VARIABLES_INJECTION_POINT/, '');
+            serviceYamlContent = serviceYamlContent.replace(/^\s*# ENV_VARIABLES_INJECTION_POINT\s*$/m, '');
         }
 
         const tempServiceYamlPath = path.join(serverDir, 'service.deploy.yaml');
