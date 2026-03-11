@@ -8,6 +8,7 @@ const PlayerSchema: Schema = new Schema({
     socketId: { type: String, required: true },
     joinedLobbyAt: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now },
+    sessions: { type: Array, default: [] },
     team: { type: Array, default: [] },
     isReady: { type: Boolean, default: false },
     isOnline: { type: Boolean, default: false }

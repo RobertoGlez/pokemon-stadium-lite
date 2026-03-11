@@ -1,6 +1,6 @@
 {
   "name": "pokemon-stadium-lite-server",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -14,10 +14,12 @@
     "dotenv": "^16.4.5",
     "fastify": "^4.26.2",
     "mongoose": "^9.2.3",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
+    "@types/ua-parser-js": "^0.7.39",
     "socket.io-client": "^4.8.3",
     "tsx": "^4.7.2",
     "typescript": "^5.4.5"

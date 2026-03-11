@@ -24,7 +24,10 @@ class SocketClient {
       .setTransports(['websocket']) // Force websocket for Cloud Run
       .enableAutoConnect() // Crucial for connection recovery
       .enableForceNew()
-      .setExtraHeaders({'Connection': 'keep-alive'})
+      .setExtraHeaders({
+        'Connection': 'keep-alive',
+        'User-Agent': 'PokemonStadiumMobile/1.0.0 (Mobile; Flutter)'
+      })
       .build());
 
     _socket!.connect();

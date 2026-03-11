@@ -1,4 +1,5 @@
 import { Server, Socket } from 'socket.io';
+import * as UAParser from 'ua-parser-js';
 import { JoinLobbyUseCase } from '../../application/use-cases/join-lobby.use-case';
 import { AssignPokemonUseCase } from '../../application/use-cases/assign-pokemon.use-case';
 import { ReadyPlayerUseCase } from '../../application/use-cases/ready-player.use-case';
@@ -8,6 +9,7 @@ import { MongoPlayerRepository } from '../../infrastructure/database/repositorie
 import { MongoBattleRepository } from '../../infrastructure/database/repositories/mongo-battle.repository';
 import { PokemonApiAdapter } from '../../infrastructure/http/adapters/pokemon-api.adapter';
 import { GetGlobalHistoryUseCase } from '../../application/use-cases/get-global-history.use-case';
+import { PlayerSession } from '../../domain/entities/player.entity';
 
 export const initializeLobbyGateway = (io: Server) => {
     // Instantiate use case dependencies locally
@@ -59,7 +61,8 @@ export const initializeLobbyGateway = (io: Server) => {
     };
 
     io.on('connection', (socket: Socket) => {
-        console.log(`[Socket] New connection: ${socket.id}`);
+        const ua = socket.handshake.headers['user-agent'] || 'UNKNOWN';
+        console.log(`[Socket] New connection: ${socket.id} with UA: ${ua}`);
 
         socket.on('join_lobby', async (nickname: string) => {
             try {
@@ -70,7 +73,44 @@ export const initializeLobbyGateway = (io: Server) => {
 
                 console.log(`[Socket] Player ${nickname} joining lobby...`);
 
-                const { lobby } = await joinLobbyUseCase.execute(nickname, socket.id);
+                const userAgent = socket.handshake.headers['user-agent'] || '';
+                const parser = new UAParser.UAParser(userAgent);
+                const result = parser.getResult();
+                
+                let parsedInfo = '';
+                if (result.browser.name) parsedInfo += `${result.browser.name} ${result.browser.version} `;
+                if (result.os.name) parsedInfo += `on ${result.os.name} ${result.os.version} `;
+                if (result.device.vendor) parsedInfo += `(${result.device.vendor} ${result.device.model})`;
+                
+                const isMobile = userAgent.includes('Mobile; Flutter');
+                
+                let deviceType: 'mobile' | 'desktop' | 'tablet' | 'unknown' = 'unknown';
+                if (isMobile || result.device.type === 'mobile') {
+                    deviceType = 'mobile';
+                } else if (result.device.type === 'tablet') {
+                    deviceType = 'tablet';
+                } else if (result.device.type === 'smarttv' || result.device.type === 'console' || result.device.type === 'wearable') {
+                     deviceType = 'unknown';
+                } else {
+                    // Assuming empty or desktop as desktop
+                    deviceType = 'desktop';
+                }
+
+                let ip = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+                if (Array.isArray(ip)) {
+                    ip = ip[0];
+                }
+
+                const sessionData: PlayerSession = {
+                    userAgent,
+                    parsedInfo: parsedInfo.trim() || undefined,
+                    timestamp: new Date(),
+                    isMobile,
+                    deviceType,
+                    ip
+                };
+
+                const { lobby } = await joinLobbyUseCase.execute(nickname, socket.id, sessionData);
                 socket.join(lobby.id!);
 
                 await broadcastLobbyStatus(lobby.id!);
