@@ -1,7 +1,7 @@
 import { LobbyRepository } from '../../domain/repositories/lobby.repository';
 import { PlayerRepository } from '../../domain/repositories/player.repository';
 import { Lobby } from '../../domain/entities/lobby.entity';
-import { Player } from '../../domain/entities/player.entity';
+import { Player, PlayerSession } from '../../domain/entities/player.entity';
 
 export class JoinLobbyUseCase {
     constructor(
@@ -9,7 +9,7 @@ export class JoinLobbyUseCase {
         private readonly playerRepository: PlayerRepository
     ) { }
 
-    async execute(nickname: string, socketId: string): Promise<{ lobby: Lobby; player: Player }> {
+    async execute(nickname: string, socketId: string, sessionData?: PlayerSession): Promise<{ lobby: Lobby; player: Player }> {
         // 1. Check for existing player by nickname (Case insensitive or exactly as requested)
         let player = await this.playerRepository.findByNickname(nickname);
 
@@ -18,21 +18,29 @@ export class JoinLobbyUseCase {
             // if a player was stuck in 'isOnline' state or refreshed quickly.
 
             // Sync/Update existing player state for the new session
+            const updatedSessions = player.sessions ? [...player.sessions] : [];
+            if (sessionData) {
+                updatedSessions.push(sessionData);
+            }
+
             player = await this.playerRepository.update(player.id, {
                 socketId,
                 isOnline: true,
                 isReady: false,
-                joinedLobbyAt: new Date()
+                joinedLobbyAt: new Date(),
+                sessions: updatedSessions
             }) as Player;
         } else {
             // Create new player record
+            const sessions = sessionData ? [sessionData] : [];
             player = await this.playerRepository.create({
                 nickname,
                 socketId,
                 joinedLobbyAt: new Date(),
                 createdAt: new Date(),
                 isOnline: true,
-                isReady: false
+                isReady: false,
+                sessions
             });
         }
 

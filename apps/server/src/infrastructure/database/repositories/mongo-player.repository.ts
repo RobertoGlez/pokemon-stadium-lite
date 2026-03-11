@@ -57,6 +57,7 @@ export class MongoPlayerRepository implements PlayerRepository {
             socketId: doc.socketId,
             joinedLobbyAt: doc.joinedLobbyAt,
             createdAt: doc.createdAt,
+            sessions: doc.sessions || [],
             team: doc.team || [],
             isReady: doc.isReady || false,
             isOnline: doc.isOnline || false
