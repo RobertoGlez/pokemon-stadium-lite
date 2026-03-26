@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLobby } from '../../../core/context/LobbyContext';
 import { PokemonCard } from '../../../shared/components/pokemon/PokemonCard';
 import { Trophy, RotateCcw, Crown, Skull } from 'lucide-react';
 
 export function VictoryScreen() {
+    const { t } = useTranslation('results');
     const navigate = useNavigate();
     const { players, winnerId, localNickname, battleLog, disconnect, isConnected } = useLobby();
     const [showConfetti, setShowConfetti] = useState(false);
@@ -84,12 +86,12 @@ export function VictoryScreen() {
 
                     <div className="flex flex-col items-center gap-3">
                         <h1 className="text-5xl md:text-7xl font-black tracking-tight text-foreground text-center uppercase drop-shadow-sm">
-                            {isPlayerWinner ? '¡Victoria!' : 'Derrota'}
+                            {isPlayerWinner ? t('victory') : t('defeat')}
                         </h1>
                         <p className="text-base md:text-lg text-muted-foreground text-center max-w-md leading-relaxed font-medium">
                             {isPlayerWinner
-                                ? `¡Felicidades, ${winner.nickname}! Tu estrategia fue impecable.`
-                                : `Has luchado valientemente, pero ${winner.nickname} ha prevalecido.`}
+                                ? t('victoryMessage', { nickname: winner.nickname })
+                                : t('defeatMessage', { nickname: winner.nickname })}
                         </p>
                     </div>
                 </div>
@@ -100,7 +102,7 @@ export function VictoryScreen() {
                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
                             <Crown className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">Ganador de la Arena</span>
+                        <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">{t('arenaChampion')}</span>
                     </div>
 
                     <div className="flex items-center gap-6 mb-10">
@@ -111,7 +113,7 @@ export function VictoryScreen() {
                             <span className="text-3xl md:text-4xl font-black text-foreground tracking-tight truncate">{winner.nickname}</span>
                             <div className="flex items-center gap-2">
                                 <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{survivingCount}/3 Pokémon en pie</span>
+                                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('pokemonStanding', { count: survivingCount })}</span>
                             </div>
                         </div>
                     </div>
@@ -129,15 +131,15 @@ export function VictoryScreen() {
                 <div className="grid w-full grid-cols-3 gap-3 md:gap-4 animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
                     <div className="group flex flex-col items-center gap-2 rounded-3xl border border-border bg-card/30 backdrop-blur-sm p-6 hover:bg-card/50 transition-all">
                         <span className="text-3xl font-black font-mono text-primary group-hover:scale-110 transition-transform">{survivingCount}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Sobrevivientes</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t('survivors')}</span>
                     </div>
                     <div className="group flex flex-col items-center gap-2 rounded-3xl border border-border bg-card/30 backdrop-blur-sm p-6 hover:bg-card/50 transition-all">
                         <span className="text-3xl font-black font-mono text-purple-400 group-hover:scale-110 transition-transform">{totalDamageDealt}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Daño Infligido</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t('damageDealt')}</span>
                     </div>
                     <div className="group flex flex-col items-center gap-2 rounded-3xl border border-border bg-card/30 backdrop-blur-sm p-6 hover:bg-card/50 transition-all">
                         <span className="text-3xl font-black font-mono text-foreground group-hover:scale-110 transition-transform">{totalTurns}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Turnos Totales</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">{t('totalTurns')}</span>
                     </div>
                 </div>
 
@@ -148,7 +150,7 @@ export function VictoryScreen() {
                         className="group h-16 w-full md:w-auto min-w-[280px] rounded-2xl bg-foreground text-background font-black px-10 text-sm md:text-base flex items-center justify-center gap-4 transition-all hover:scale-[1.02] hover:bg-muted active:scale-[0.98] shadow-2xl mb-12"
                     >
                         <RotateCcw className="h-5 w-5 group-hover:rotate-[-45deg] transition-transform" />
-                        JUGAR DE NUEVO
+                        {t('playAgain')}
                     </button>
                 </div>
             </div>

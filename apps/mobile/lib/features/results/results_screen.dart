@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/lobby_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class ResultsScreen extends StatelessWidget {
   const ResultsScreen({super.key});
@@ -10,6 +11,7 @@ class ResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lobby = context.watch<LobbyProvider>();
+    final l10n = AppLocalizations.of(context)!;
     final isWinner = lobby.localPlayer?.id == lobby.winnerId;
     final winnerName = lobby.players.firstWhere((p) => p.id == lobby.winnerId, orElse: () => lobby.players.first).nickname;
 
@@ -17,7 +19,6 @@ class ResultsScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Background Grid
           Positioned.fill(
             child: Opacity(
               opacity: 0.05,
@@ -29,16 +30,13 @@ class ResultsScreen extends StatelessWidget {
               ),
             ),
           ),
-          
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+              padding: const EdgeInsets.fromLTRB(40, 48, 40, 60),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Spacer(),
-                  
-                  // Big Icon
                   TweenAnimationBuilder(
                     tween: Tween<double>(begin: 0, end: 1),
                     duration: const Duration(seconds: 1),
@@ -67,12 +65,9 @@ class ResultsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
                   const SizedBox(height: 48),
-                  
-                  // Text Banner
                   Text(
-                    isWinner ? '¡VICTORIA!' : 'FIN DEL JUEGO',
+                    isWinner ? l10n.resultsVictory : l10n.resultsGameOver,
                     style: TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.w900,
@@ -80,23 +75,16 @@ class ResultsScreen extends StatelessWidget {
                       color: isWinner ? AppColors.success : AppColors.textPrimary,
                     ),
                   ),
-                  
                   const SizedBox(height: 16),
-                  
                   Text(
-                    isWinner 
-                      ? 'Has demostrado ser un gran entrenador.' 
-                      : 'Tus Pokémon han caído, pero puedes volverlo a intentar.',
+                    isWinner ? l10n.resultsSubtitleWin : l10n.resultsSubtitleLose,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 16,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  
                   const SizedBox(height: 32),
-                  
-                  // Winner info
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
@@ -110,16 +98,13 @@ class ResultsScreen extends StatelessWidget {
                         const Icon(Icons.stars, size: 16, color: AppColors.warning),
                         const SizedBox(width: 8),
                         Text(
-                          'GANADOR: ${winnerName.toUpperCase()}',
+                          l10n.resultsWinnerBadge(winnerName.toUpperCase()),
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
                         ),
                       ],
                     ),
                   ),
-                  
                   const Spacer(),
-                  
-                  // Actions
                   ElevatedButton(
                     onPressed: () {
                       lobby.disconnect();
@@ -128,22 +113,18 @@ class ResultsScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 56),
                     ),
-                    child: const Text('VOLVER AL LOBBY'),
+                    child: Text(l10n.resultsBackToLobby),
                   ),
-                  
                   const SizedBox(height: 12),
-                  
                   OutlinedButton(
-                    onPressed: () {
-                       // Close app or similar logic
-                    },
+                    onPressed: () {},
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 56),
                       side: const BorderSide(color: AppColors.border),
                       foregroundColor: AppColors.textSecondary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('SALIR DEL JUEGO'),
+                    child: Text(l10n.resultsExitGame),
                   ),
                 ],
               ),

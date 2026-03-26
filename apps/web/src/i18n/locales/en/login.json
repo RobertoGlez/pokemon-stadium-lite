@@ -1,0 +1,23 @@
+{
+  "logoAlt": "Pokemon Stadium Lite Logo",
+  "title": "Pokémon Stadium Lite",
+  "intro": "Set up your connection to enter the arena and challenge other trainers.",
+  "serverLabel": "Server Connection",
+  "connecting": "Connecting...",
+  "online": "Online",
+  "disconnected": "Disconnected",
+  "nicknameLabel": "Trainer Nickname",
+  "nicknamePlaceholder": "e.g: ash-1",
+  "nicknameInUse": "This nickname is already in use.",
+  "serverCheckFailed": "Could not verify the nickname with the server (timeout, network, or server unavailable).",
+  "invalidServerError": "You cannot enter until you set up a valid server.",
+  "nicknameTooShort": "Nickname must be longer than 3 characters.",
+  "validating": "VALIDATING...",
+  "connectButton": "CONNECT TO STADIUM",
+  "viewHistory": "View battle history",
+  "serverStatus": "Server Status",
+  "help": "Help",
+  "version": "Pokémon Stadium Lite v{{version}}",
+  "serverInvalid": "Invalid or offline server.",
+  "connectionFailed": "Could not connect via WebSocket. Check the server URL and your network."
+}

@@ -10,6 +10,17 @@ import { MongoBattleRepository } from '../../infrastructure/database/repositorie
 import { PokemonApiAdapter } from '../../infrastructure/http/adapters/pokemon-api.adapter';
 import { GetGlobalHistoryUseCase } from '../../application/use-cases/get-global-history.use-case';
 import { PlayerSession } from '../../domain/entities/player.entity';
+import { PokemonApiError } from '../../infrastructure/http/errors/pokemon-api.error';
+
+function toSocketActionError(error: unknown): { code: string; message: string } {
+    if (error instanceof PokemonApiError) {
+        return { code: error.code, message: error.message };
+    }
+    if (error instanceof Error) {
+        return { code: 'ERROR', message: error.message };
+    }
+    return { code: 'UNKNOWN', message: 'Ha ocurrido un error inesperado.' };
+}
 
 export const initializeLobbyGateway = (io: Server) => {
     // Instantiate use case dependencies locally
@@ -33,31 +44,35 @@ export const initializeLobbyGateway = (io: Server) => {
     };
 
     const broadcastLobbyStatus = async (lobbyId: string) => {
-        const lobby = await lobbyRepo.findById(lobbyId);
-        if (!lobby) return;
+        try {
+            const lobby = await lobbyRepo.findById(lobbyId);
+            if (!lobby) return;
 
-        const playersData = [];
-        for (const playerId of lobby.players) {
-            const p = await playerRepo.findById(playerId);
-            if (p) {
-                playersData.push({
-                    id: p.id,
-                    socketId: p.socketId,  // Included so clients can match turn by socketId as fallback
-                    nickname: p.nickname,
-                    team: p.team || [],
-                    isReady: p.isReady || false,
-                    joinedLobbyAt: p.joinedLobbyAt
-                });
+            const playersData = [];
+            for (const playerId of lobby.players) {
+                const p = await playerRepo.findById(playerId);
+                if (p) {
+                    playersData.push({
+                        id: p.id,
+                        socketId: p.socketId,  // Included so clients can match turn by socketId as fallback
+                        nickname: p.nickname,
+                        team: p.team || [],
+                        isReady: p.isReady || false,
+                        joinedLobbyAt: p.joinedLobbyAt
+                    });
+                }
             }
+
+            const lobbyStatusResponse = {
+                status: lobby.status,
+                players: playersData
+            };
+
+            io.to(lobbyId).emit('lobby_status', lobbyStatusResponse);
+            console.log(`[Socket] Emitted lobby_status to room ${lobbyId}:`, JSON.stringify(lobbyStatusResponse));
+        } catch (err) {
+            console.error('[Socket] broadcastLobbyStatus failed:', err);
         }
-
-        const lobbyStatusResponse = {
-            status: lobby.status,
-            players: playersData
-        };
-
-        io.to(lobbyId).emit('lobby_status', lobbyStatusResponse);
-        console.log(`[Socket] Emitted lobby_status to room ${lobbyId}:`, JSON.stringify(lobbyStatusResponse));
     };
 
     io.on('connection', (socket: Socket) => {
@@ -122,6 +137,8 @@ export const initializeLobbyGateway = (io: Server) => {
                     });
                 } else {
                     console.error(`[Socket] Error in join_lobby:`, error);
+                    const payload = toSocketActionError(error);
+                    socket.emit('join_error', { code: payload.code, message: payload.message });
                 }
             }
         });
@@ -137,6 +154,7 @@ export const initializeLobbyGateway = (io: Server) => {
                 }
             } catch (error: any) {
                 console.error(`[Socket] Error in assign_pokemon:`, error);
+                socket.emit('assign_error', toSocketActionError(error));
             }
         });
 
@@ -209,6 +227,7 @@ export const initializeLobbyGateway = (io: Server) => {
                 }
             } catch (error) {
                 console.error(`[Socket] Error in ready:`, error);
+                socket.emit('ready_error', toSocketActionError(error));
             }
         });
 
@@ -261,8 +280,8 @@ export const initializeLobbyGateway = (io: Server) => {
                     }
                 }
             } catch (error) {
-                // Silently log out of turn attacks or invalid actions
                 console.error(`[Socket] Attack rejected for ${socket.id}: ${(error as Error).message}`);
+                socket.emit('attack_error', toSocketActionError(error));
             }
         });
 

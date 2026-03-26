@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/pokemon.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 class PokemonCard extends StatelessWidget {
   final PokemonBase pokemon;
@@ -14,6 +15,8 @@ class PokemonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -21,7 +24,6 @@ class PokemonCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         child: Row(
           children: [
-            // Sprite
             SizedBox(
               height: isLarge ? 60 : 44,
               width: isLarge ? 60 : 44,
@@ -29,12 +31,11 @@ class PokemonCard extends StatelessWidget {
                   ? Image.network(
                       pokemon.spriteUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.help_outline, size: 20),
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.help_outline, size: 20),
                     )
                   : const Icon(Icons.pets, size: 20, color: AppColors.textSecondary),
             ),
             const SizedBox(width: 8),
-            // Info
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -51,7 +52,6 @@ class PokemonCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 1),
-                  // Types
                   Wrap(
                     spacing: 3,
                     runSpacing: 1,
@@ -69,15 +69,14 @@ class PokemonCard extends StatelessWidget {
                     )).toList(),
                   ),
                   const SizedBox(height: 2),
-                  // Stats
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      _statItem('HP', pokemon.stats.currentHp.toString()),
+                      _statItem(l10n.statHp, pokemon.stats.currentHp.toString()),
                       const SizedBox(width: 8),
-                      _statItem('ATK', pokemon.stats.attack.toString()),
+                      _statItem(l10n.statAtk, pokemon.stats.attack.toString()),
                       const SizedBox(width: 8),
-                      _statItem('DEF', pokemon.stats.defense.toString()),
+                      _statItem(l10n.statDef, pokemon.stats.defense.toString()),
                     ],
                   ),
                 ],

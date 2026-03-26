@@ -1,0 +1,22 @@
+{
+  "statusActive": "Active Lobby",
+  "opponentFound": "Opponent Found!",
+  "title": "Battle Lobby",
+  "pokemonAssigned": "{{count}} Pokémon assigned",
+  "noTeamYet": "No team yet",
+  "waitingOpponent": "Waiting for opponent...",
+  "assigning": "Assigning...",
+  "generateTeam": "Generate Team",
+  "yourAssignedTeam": "Your Assigned Team",
+  "waitingForOpponent": "WAITING FOR OPPONENT...",
+  "readyForBattle": "READY FOR BATTLE",
+  "battleHistory": "Battle History",
+  "loadingHistory": "Loading history...",
+  "noBattles": "No battles registered",
+  "noBattlesDescription": "No battles have been fought on this server yet.",
+  "inProgress": "in progress",
+  "finished": "finished",
+  "assignTeamError": "Could not assign your team.",
+  "readyError": "Could not confirm ready state.",
+  "attackError": "Could not register your attack."
+}

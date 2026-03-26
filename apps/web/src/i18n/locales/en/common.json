@@ -1,0 +1,20 @@
+{
+  "appName": "Pokémon Stadium Lite",
+  "vs": "VS",
+  "hp": "HP",
+  "stats": {
+    "hp": "HP",
+    "attack": "ATK",
+    "defense": "DEF",
+    "speed": "SPD"
+  },
+  "battleLog": {
+    "battleStarted": "The battle has begun!",
+    "attackLog": "{{attacker}} attacked {{defender}} for {{damage}} damage.",
+    "defeated": "{{pokemon}} was defeated!",
+    "switchPokemon": "{{nickname}} sends out {{pokemon}}.",
+    "winnerLog": "{{winner}} has won the battle!"
+  },
+  "active": "Active",
+  "ko": "KO"
+}

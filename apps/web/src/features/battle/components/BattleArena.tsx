@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLobby } from '../../../core/context/LobbyContext';
 import { Swords, Zap, Shield, ChevronRight, Clock } from 'lucide-react';
 // Removed VictoryScreen import from here as it's now a route
@@ -47,8 +48,8 @@ function StatChip({ label, value }: { label: string; value: number }) {
     );
 }
 
-function AttackButton({ isMyTurn, isAttacking, onAttack, lobbyStatus }: {
-    isMyTurn: boolean; isAttacking: boolean; onAttack: () => void; lobbyStatus: string
+function AttackButton({ isMyTurn, isAttacking, onAttack, lobbyStatus, t }: {
+    isMyTurn: boolean; isAttacking: boolean; onAttack: () => void; lobbyStatus: string; t: (key: string) => string
 }) {
     return (
         <button
@@ -62,17 +63,17 @@ function AttackButton({ isMyTurn, isAttacking, onAttack, lobbyStatus }: {
             {isMyTurn && !isAttacking ? (
                 <span className="flex items-center gap-2">
                     <Swords className="h-4 w-4" />
-                    ATACAR!
+                    {t('attack')}
                 </span>
             ) : isAttacking ? (
                 <span className="flex items-center gap-2">
                     <Zap className="h-4 w-4 animate-pulse" />
-                    Atacando...
+                    {t('attacking')}
                 </span>
             ) : (
                 <span className="flex items-center gap-2">
                     <Shield className="h-4 w-4" />
-                    Esperando...
+                    {t('waiting')}
                 </span>
             )}
         </button>
@@ -80,8 +81,9 @@ function AttackButton({ isMyTurn, isAttacking, onAttack, lobbyStatus }: {
 }
 
 export function BattleArena() {
+    const { t } = useTranslation('battle');
     const navigate = useNavigate();
-    const { isConnected, lobbyStatus, currentTurnPlayerId, players, localNickname, emitAttack, lastDamageEvent, battleLog } = useLobby();
+    const { isConnected, lobbyStatus, currentTurnPlayerId, players, localNickname, emitAttack, lastDamageEvent, battleLog, socketActionError, clearSocketActionError } = useLobby();
 
     const [isAttacking, setIsAttacking] = useState(false);
     const [activeDamage, setActiveDamage] = useState<{ defenderId: string; damage: number; timestamp: number } | null>(null);
@@ -101,6 +103,12 @@ export function BattleArena() {
             logRef.current.scrollTop = logRef.current.scrollHeight;
         }
     }, [battleLog, activeTab]);
+
+    useEffect(() => {
+        if (socketActionError) {
+            setIsAttacking(false);
+        }
+    }, [socketActionError]);
 
     // Listen to damage events sequentially for animations
     useEffect(() => {
@@ -159,22 +167,35 @@ export function BattleArena() {
             {/* Top Bar */}
             <header className="relative z-10 flex items-center justify-between border-b border-border bg-card/80 px-4 py-3 backdrop-blur-sm shrink-0">
                 <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold tracking-tight">Pokémon Stadium Lite</span>
+                    <span className="text-sm font-bold tracking-tight">{t('common:appName')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 border border-primary/30 rounded-full px-2.5 py-1 bg-primary/10">
                     <span className="relative flex h-2 w-2">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                         <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                     </span>
-                    <span className="text-[10px] font-bold text-primary uppercase">LIVE</span>
+                    <span className="text-[10px] font-bold text-primary uppercase">{t('live')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs font-mono font-medium text-muted-foreground relative">
-                        {isMyTurn ? <span className="text-green-400">Tu Turno</span> : 'Turno Enemigo'}
+                        {isMyTurn ? <span className="text-green-400">{t('yourTurn')}</span> : t('enemyTurn')}
                     </span>
                 </div>
             </header>
+
+            {socketActionError && (
+                <div className="relative z-10 mx-4 mt-2 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2 text-xs text-destructive shrink-0">
+                    <span className="flex-1">{socketActionError}</span>
+                    <button
+                        type="button"
+                        onClick={() => clearSocketActionError()}
+                        className="shrink-0 rounded-md px-2 py-0.5 font-semibold hover:bg-destructive/20"
+                    >
+                        OK
+                    </button>
+                </div>
+            )}
 
             {/* Battle Field */}
             <div className="relative z-10 flex flex-1 flex-col justify-center gap-4 px-4 py-4 md:px-8 md:py-6 max-w-5xl mx-auto w-full min-h-0">
@@ -291,7 +312,7 @@ export function BattleArena() {
                                 : 'text-muted-foreground hover:bg-white/5'
                                 }`}
                         >
-                            {tab === 'actions' ? 'Ataque' : tab === 'team' ? 'Equipo' : 'Log'}
+                            {tab === 'actions' ? t('tabAttack') : tab === 'team' ? t('tabTeam') : t('tabLog')}
                         </button>
                     ))}
                 </div>
@@ -302,7 +323,7 @@ export function BattleArena() {
                     <div className="hidden md:flex md:gap-6 md:items-start h-full">
                         {/* Attack */}
                         <div className="flex flex-2 flex-col gap-3 min-w-[280px]">
-                            <AttackButton isMyTurn={isMyTurn} isAttacking={isAttacking} onAttack={handleAttack} lobbyStatus={lobbyStatus} />
+                            <AttackButton isMyTurn={isMyTurn} isAttacking={isAttacking} onAttack={handleAttack} lobbyStatus={lobbyStatus} t={t} />
                             <div className="grid grid-cols-4 gap-2">
                                 <StatChip label="ATK" value={myActive.stats.attack} />
                                 <StatChip label="DEF" value={myActive.stats.defense} />
@@ -312,7 +333,7 @@ export function BattleArena() {
                         </div>
                         {/* Team */}
                         <div className="flex flex-col gap-2 w-72 border-l border-border pl-6">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tu Equipo</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t('yourTeam')}</span>
                             <div className="flex flex-col gap-2">
                                 {localPlayer.team?.map((pokemon, i) => (
                                     <div key={pokemon.id} className={`flex items-center gap-3 rounded-xl border p-2 transition-all ${pokemon.isDefeated ? 'border-red-500/20 bg-red-500/5 opacity-50 grayscale'
@@ -325,7 +346,7 @@ export function BattleArena() {
                                         <div className="flex flex-col items-end shrink-0">
                                             <span className="text-[9px] font-mono text-muted-foreground">{pokemon.stats.currentHp}/{pokemon.stats.maxHp}</span>
                                             {i === myActiveIndex && !pokemon.isDefeated && (
-                                                <span className="text-[8px] font-black text-primary uppercase">Activo</span>
+                                                <span className="text-[8px] font-black text-primary uppercase">{t('common:active')}</span>
                                             )}
                                         </div>
                                     </div>
@@ -334,7 +355,7 @@ export function BattleArena() {
                         </div>
                         {/* Log */}
                         <div className="flex flex-col gap-2 flex-1 border-l border-border pl-6 h-full">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Registro</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t('log')}</span>
                             <div ref={logRef} className="flex h-[148px] flex-col gap-1.5 overflow-y-auto rounded-xl border border-border bg-[#050811] p-3 scroll-smooth scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                                 {battleLog.map((log) => (
                                     <div key={log.id} className="flex items-start gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
@@ -344,7 +365,7 @@ export function BattleArena() {
                                     </div>
                                 ))}
                                 {battleLog.length === 0 && (
-                                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic">Esperando acciones...</div>
+                                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic">{t('waitingActions')}</div>
                                 )}
                             </div>
                         </div>
@@ -354,7 +375,7 @@ export function BattleArena() {
                     <div className="md:hidden h-full">
                         {activeTab === 'actions' && (
                             <div className="flex flex-col gap-4 animate-in fade-in duration-200">
-                                <AttackButton isMyTurn={isMyTurn} isAttacking={isAttacking} onAttack={handleAttack} lobbyStatus={lobbyStatus} />
+                                <AttackButton isMyTurn={isMyTurn} isAttacking={isAttacking} onAttack={handleAttack} lobbyStatus={lobbyStatus} t={t} />
                                 <div className="grid grid-cols-4 gap-2">
                                     <StatChip label="ATK" value={myActive.stats.attack} />
                                     <StatChip label="DEF" value={myActive.stats.defense} />
@@ -374,9 +395,9 @@ export function BattleArena() {
                                             <span className="text-sm font-bold text-foreground truncate uppercase">{pokemon.name}</span>
                                             <span className="text-[11px] font-mono text-muted-foreground">{pokemon.stats.currentHp}/{pokemon.stats.maxHp} HP</span>
                                         </div>
-                                        {pokemon.isDefeated && <span className="text-[10px] font-black text-red-500 border border-red-500/20 px-2 py-0.5 rounded bg-red-500/10">KO</span>}
+                                        {pokemon.isDefeated && <span className="text-[10px] font-black text-red-500 border border-red-500/20 px-2 py-0.5 rounded bg-red-500/10">{t('common:ko')}</span>}
                                         {i === myActiveIndex && !pokemon.isDefeated && (
-                                            <span className="text-[10px] font-black text-primary border border-primary/20 px-2 py-0.5 rounded bg-primary/10">ACTIVO</span>
+                                            <span className="text-[10px] font-black text-primary border border-primary/20 px-2 py-0.5 rounded bg-primary/10">{t('common:active').toUpperCase()}</span>
                                         )}
                                     </div>
                                 ))}
@@ -392,7 +413,7 @@ export function BattleArena() {
                                     </div>
                                 ))}
                                 {battleLog.length === 0 && (
-                                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic">Esperando acciones...</div>
+                                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic">{t('waitingActions')}</div>
                                 )}
                             </div>
                         )}

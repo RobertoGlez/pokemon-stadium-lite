@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/lobby_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/pokemon.dart';
-import '../../core/models/player.dart'; // Added for LobbyStatus
+import '../../core/models/player.dart';
+import '../../l10n/app_localizations.dart';
 import 'components/hp_bar.dart';
 
 class BattleScreen extends StatefulWidget {
@@ -38,11 +39,10 @@ class _BattleScreenState extends State<BattleScreen> {
     final lobby = context.watch<LobbyProvider>();
     final localPlayer = lobby.localPlayer;
     final opponent = lobby.opponent;
+    final l10n = AppLocalizations.of(context)!;
 
-    // Auto-scroll logs
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
-    // Navigation for finished match
     if (lobby.lobbyStatus == LobbyStatus.finished) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.go('/results');
@@ -61,13 +61,34 @@ class _BattleScreenState extends State<BattleScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Opponent Section (Top)
+            if (lobby.socketActionError != null)
+              Material(
+                color: Colors.red.withOpacity(0.12),
+                child: InkWell(
+                  onTap: () => lobby.clearSocketActionError(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            lobby.socketActionError!,
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => lobby.clearSocketActionError(),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             Expanded(
               flex: 4,
               child: _buildPokemonArenaSide(opponentActive!, opponent.nickname, isOpponent: true),
             ),
-            
-            // Divider / Battle Logs
             Expanded(
               flex: 2,
               child: Container(
@@ -98,15 +119,11 @@ class _BattleScreenState extends State<BattleScreen> {
                 ),
               ),
             ),
-
-            // Local Player Section (Bottom)
             Expanded(
               flex: 4,
               child: _buildPokemonArenaSide(myActive!, localPlayer.nickname, isOpponent: false),
             ),
-
-            // Controls
-            _buildActionPanel(lobby),
+            _buildActionPanel(lobby, l10n),
           ],
         ),
       ),
@@ -120,24 +137,22 @@ class _BattleScreenState extends State<BattleScreen> {
         mainAxisAlignment: isOpponent ? MainAxisAlignment.start : MainAxisAlignment.end,
         children: [
           if (isOpponent) ...[
-             _trainerInfo(trainerName, isOpponent),
-             const SizedBox(height: 8),
-             HpBar(
-               percentage: pokemon.stats.hpPercentage,
-               label: '${pokemon.stats.currentHp}/${pokemon.stats.maxHp}',
-               isLarge: true,
-             ),
-             const Spacer(),
+            _trainerInfo(trainerName, isOpponent),
+            const SizedBox(height: 8),
+            HpBar(
+              percentage: pokemon.stats.hpPercentage,
+              label: '${pokemon.stats.currentHp}/${pokemon.stats.maxHp}',
+              isLarge: true,
+            ),
+            const Spacer(),
           ],
-          
-          // Sprite with simple animation placeholder
           TweenAnimationBuilder(
             key: ValueKey(pokemon.id),
             tween: Tween<double>(begin: 0, end: 1),
             duration: const Duration(seconds: 1),
             builder: (context, double value, child) {
               return Transform.scale(
-                scale: 0.8 + (value * 0.2), // Slightly smaller scale
+                scale: 0.8 + (value * 0.2),
                 child: Opacity(
                   opacity: value,
                   child: child,
@@ -145,7 +160,7 @@ class _BattleScreenState extends State<BattleScreen> {
               );
             },
             child: SizedBox(
-              height: 120, // Reduced from 150
+              height: 120,
               width: 120,
               child: Image.network(
                 pokemon.spriteUrl,
@@ -154,16 +169,15 @@ class _BattleScreenState extends State<BattleScreen> {
               ),
             ),
           ),
-          
           if (!isOpponent) ...[
-             const Spacer(),
-             HpBar(
-               percentage: pokemon.stats.hpPercentage,
-               label: '${pokemon.stats.currentHp}/${pokemon.stats.maxHp}',
-               isLarge: true,
-             ),
-             const SizedBox(height: 12),
-             _trainerInfo(trainerName, isOpponent),
+            const Spacer(),
+            HpBar(
+              percentage: pokemon.stats.hpPercentage,
+              label: '${pokemon.stats.currentHp}/${pokemon.stats.maxHp}',
+              isLarge: true,
+            ),
+            const SizedBox(height: 12),
+            _trainerInfo(trainerName, isOpponent),
           ],
         ],
       ),
@@ -178,7 +192,7 @@ class _BattleScreenState extends State<BattleScreen> {
           name.toUpperCase(),
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1, color: AppColors.textSecondary),
         ),
-        if (isOpponent) 
+        if (isOpponent)
           const Icon(Icons.shield, size: 14, color: AppColors.textSecondary)
         else
           const Icon(Icons.bolt, size: 14, color: AppColors.arenaBlue),
@@ -186,7 +200,7 @@ class _BattleScreenState extends State<BattleScreen> {
     );
   }
 
-  Widget _buildActionPanel(LobbyProvider lobby) {
+  Widget _buildActionPanel(LobbyProvider lobby, AppLocalizations l10n) {
     final bool isMyTurn = lobby.isMyTurn;
 
     return Container(
@@ -210,7 +224,7 @@ class _BattleScreenState extends State<BattleScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    isMyTurn ? '¡ATACAR!' : 'ESPERANDO RIVAL...',
+                    isMyTurn ? l10n.battleAttack : l10n.battleWaitingRival,
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2),
                   ),
                   if (!isMyTurn)
@@ -229,11 +243,16 @@ class _BattleScreenState extends State<BattleScreen> {
 
   Color _getLogColor(String type) {
     switch (type) {
-      case 'damage': return AppColors.warning;
-      case 'defeat': return AppColors.danger;
-      case 'winner': return AppColors.success;
-      case 'switch': return AppColors.arenaBlue;
-      default: return AppColors.textSecondary;
+      case 'damage':
+        return AppColors.warning;
+      case 'defeat':
+        return AppColors.danger;
+      case 'winner':
+        return AppColors.success;
+      case 'switch':
+        return AppColors.arenaBlue;
+      default:
+        return AppColors.textSecondary;
     }
   }
 }

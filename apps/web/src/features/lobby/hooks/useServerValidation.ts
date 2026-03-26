@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 
 export interface ServerMetadata {
@@ -10,6 +11,7 @@ export interface ServerMetadata {
 }
 
 export function useServerValidation() {
+    const { t } = useTranslation('login');
     const [isValid, setIsValid] = useState<boolean>(false);
     const [isChecking, setIsChecking] = useState<boolean>(false);
     const [metadata, setMetadata] = useState<ServerMetadata | null>(null);
@@ -45,11 +47,11 @@ export function useServerValidation() {
         } catch (err: any) {
             setIsValid(false);
             setMetadata(null);
-            setError('Servidor no válido o fuera de línea.');
+            setError(t('serverInvalid'));
             setIsChecking(false);
             return false;
         }
-    }, []);
+    }, [t]);
 
     return { validateServer, isValid, isChecking, metadata, error, setIsValid };
 }

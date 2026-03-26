@@ -1,0 +1,14 @@
+{
+  "live": "LIVE",
+  "yourTurn": "Tu Turno",
+  "enemyTurn": "Turno Enemigo",
+  "attack": "ATACAR!",
+  "attacking": "Atacando...",
+  "waiting": "Esperando...",
+  "tabAttack": "Ataque",
+  "tabTeam": "Equipo",
+  "tabLog": "Log",
+  "yourTeam": "Tu Equipo",
+  "log": "Registro",
+  "waitingActions": "Esperando acciones..."
+}

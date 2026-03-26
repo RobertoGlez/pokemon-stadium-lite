@@ -1,0 +1,116 @@
+{
+  "@@locale": "en",
+  "appTitle": "Pokémon Stadium Lite",
+
+  "loginIntro": "Enter the arena and challenge other trainers.",
+  "loginServerLabel": "SERVER CONNECTION",
+  "loginServerHint": "https://your-server.example.com",
+  "loginUrlRequired": "Enter a valid URL",
+  "loginNicknameLabel": "TRAINER NICKNAME",
+  "loginNicknameHint": "e.g. ash-1",
+  "loginNicknameRequired": "Enter a nickname",
+  "loginNicknameMinLength": "At least 4 characters",
+  "loginConnectButton": "CONNECT TO STADIUM",
+  "loginServerStatus": "Server status",
+
+  "lobbyAppBarTitle": "GLOBAL LOBBY",
+  "lobbyHistoryTooltip": "Global history",
+  "lobbyWaitingPlayers": "WAITING FOR PLAYERS...",
+  "lobbyRivalFound": "OPPONENT FOUND ({readyCount}/2 READY)",
+  "@lobbyRivalFound": {
+    "placeholders": {
+      "readyCount": { "type": "int" }
+    }
+  },
+  "lobbyYourTeam": "YOUR ASSIGNED TEAM",
+  "lobbyWaitingTeam": "Waiting for team assignment...",
+  "lobbyReadyToFight": "READY TO FIGHT!",
+  "lobbyIAmReady": "I'M READY",
+  "lobbyYou": "You",
+  "lobbyWaitingOpponent": "Waiting...",
+  "lobbyRegionalHistory": "REGIONAL HISTORY",
+  "lobbyNoRecentBattles": "No recent battles.",
+  "lobbyStatusInProgress": "IN PROGRESS",
+  "lobbyStatusFinished": "FINISHED",
+  "lobbyTimeAgoMoments": "A few seconds ago",
+  "lobbyTimeAgoMinutes": "{minutes}m ago",
+  "@lobbyTimeAgoMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "lobbyTimeAgoHours": "{hours}h ago",
+  "@lobbyTimeAgoHours": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "lobbyTimeAgoDays": "{days}d ago",
+  "@lobbyTimeAgoDays": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "lobbyWinner": "Winner: {name}",
+  "@lobbyWinner": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "vs": "VS",
+
+  "battleAttack": "ATTACK!",
+  "battleWaitingRival": "WAITING FOR OPPONENT...",
+
+  "resultsVictory": "VICTORY!",
+  "resultsGameOver": "GAME OVER",
+  "resultsSubtitleWin": "You've proven yourself a great trainer.",
+  "resultsSubtitleLose": "Your Pokémon have fainted—but you can try again.",
+  "resultsWinnerBadge": "WINNER: {name}",
+  "@resultsWinnerBadge": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "resultsBackToLobby": "BACK TO LOBBY",
+  "resultsExitGame": "EXIT GAME",
+
+  "statHp": "HP",
+  "statAtk": "ATK",
+  "statDef": "DEF",
+
+  "battleLogStarted": "The battle has begun!",
+  "battleLogAttack": "{attacker} attacked {defender} for {damage} damage.",
+  "@battleLogAttack": {
+    "placeholders": {
+      "attacker": { "type": "String" },
+      "defender": { "type": "String" },
+      "damage": { "type": "int" }
+    }
+  },
+  "battleLogDefeated": "{pokemon} was defeated!",
+  "@battleLogDefeated": {
+    "placeholders": {
+      "pokemon": { "type": "String" }
+    }
+  },
+  "battleLogSwitch": "{nickname} sends out {pokemon}.",
+  "@battleLogSwitch": {
+    "placeholders": {
+      "nickname": { "type": "String" },
+      "pokemon": { "type": "String" }
+    }
+  },
+  "battleLogWinner": "{winner} has won the battle!",
+  "@battleLogWinner": {
+    "placeholders": {
+      "winner": { "type": "String" }
+    }
+  },
+  "joinErrorDefault": "Could not join",
+  "connectionFailed": "Could not connect to the server. Check the URL and your network.",
+  "socketActionFallback": "Could not complete the action.",
+
+  "languageEs": "ES",
+  "languageEn": "EN"
+}

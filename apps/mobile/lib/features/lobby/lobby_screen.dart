@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/lobby_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/models/player.dart';
+import '../../l10n/app_localizations.dart';
 import 'components/pokemon_card.dart';
 
 class LobbyScreen extends StatefulWidget {
@@ -17,7 +18,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-request team if not present
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final lobby = context.read<LobbyProvider>();
       if (lobby.localPlayer?.team == null || lobby.localPlayer!.team!.isEmpty) {
@@ -44,22 +44,39 @@ class _LobbyScreenState extends State<LobbyScreen> {
     }
   }
 
+  String _formatTimeAgo(AppLocalizations l10n, DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inSeconds < 60) {
+      return l10n.lobbyTimeAgoMoments;
+    } else if (diff.inMinutes < 60) {
+      return l10n.lobbyTimeAgoMinutes(diff.inMinutes);
+    } else if (diff.inHours < 24) {
+      return l10n.lobbyTimeAgoHours(diff.inHours);
+    } else {
+      return l10n.lobbyTimeAgoDays(diff.inDays);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final lobby = context.watch<LobbyProvider>();
     final localPlayer = lobby.localPlayer;
     final opponent = lobby.opponent;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('LOBBY GLOBAL', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+        title: Text(
+          l10n.lobbyAppBarTitle,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.history, size: 22, color: AppColors.textSecondary),
-            tooltip: 'Historial Global',
+            tooltip: l10n.lobbyHistoryTooltip,
             onPressed: () => _showGlobalHistoryModal(context),
           ),
           IconButton(
@@ -73,40 +90,59 @@ class _LobbyScreenState extends State<LobbyScreen> {
       ),
       body: Column(
         children: [
-          // Status Banner
+          if (lobby.socketActionError != null)
+            Material(
+              color: Colors.red.withOpacity(0.12),
+              child: InkWell(
+                onTap: () => lobby.clearSocketActionError(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          lobby.socketActionError!,
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => lobby.clearSocketActionError(),
+                        child: const Text('OK'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           _buildStatusBanner(lobby),
-          
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(12), // Reduced padding
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Players Row
                   Row(
                     children: [
-                      _playerInfoTile(localPlayer, isLocal: true),
+                      _playerInfoTile(l10n, localPlayer, isLocal: true),
                       const SizedBox(width: 8),
-                      const Text('VS', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontSize: 10)),
+                      Text(l10n.vs, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary, fontSize: 10)),
                       const SizedBox(width: 8),
-                      _playerInfoTile(opponent, isLocal: false),
+                      _playerInfoTile(l10n, opponent, isLocal: false),
                     ],
                   ),
-                  
                   const SizedBox(height: 24),
-                  
-                  // Team Section
-                  const Text(
-                    'TU EQUIPO ASIGNADO',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
+                  Text(
+                    l10n.lobbyYourTeam,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary, letterSpacing: 1.0),
                   ),
                   const SizedBox(height: 12),
-                  
                   if (lobby.isRequestingTeam)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(40.0),
-                      child: CircularProgressIndicator(),
-                    ))
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
                   else if (localPlayer?.team != null && localPlayer!.team!.isNotEmpty)
                     GridView.builder(
                       shrinkWrap: true,
@@ -115,7 +151,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 8,
                         mainAxisSpacing: 8,
-                        mainAxisExtent: 76, // Fixed pixel height — eliminates empty space
+                        mainAxisExtent: 76,
                       ),
                       itemCount: localPlayer.team!.length,
                       itemBuilder: (context, index) {
@@ -123,15 +159,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       },
                     )
                   else
-                    const Center(child: Text('Esperando asignación de equipo...')),
-                  
+                    Center(child: Text(l10n.lobbyWaitingTeam)),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
-          
-          // Action Footer
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -144,12 +177,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppColors.success.withOpacity(0.3)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle, color: AppColors.success),
-                          SizedBox(width: 8),
-                          Text('¡LISTO PARA LUCHAR!', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
+                          const Icon(Icons.check_circle, color: AppColors.success),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.lobbyReadyToFight,
+                            style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold),
+                          ),
                         ],
                       ),
                     )
@@ -158,7 +194,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           ? () => lobby.emitReady()
                           : null,
                       style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
-                      child: const Text('ESTOY LISTO'),
+                      child: Text(l10n.lobbyIAmReady),
                     ),
             ),
           ),
@@ -168,13 +204,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Widget _buildStatusBanner(LobbyProvider lobby) {
-    String text = 'ESPERANDO JUGADORES...';
+    final l10n = AppLocalizations.of(context)!;
+    String text = l10n.lobbyWaitingPlayers;
     Color color = AppColors.textSecondary.withOpacity(0.1);
     Color textColor = AppColors.textSecondary;
 
     if (lobby.players.length == 2) {
       final readyCount = lobby.players.where((p) => p.isReady).length;
-      text = 'RIVAL ENCONTRADO ($readyCount/2 LISTOS)';
+      text = l10n.lobbyRivalFound(readyCount);
       color = AppColors.arenaBlue.withOpacity(0.1);
       textColor = AppColors.arenaBlue;
     }
@@ -191,7 +228,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 
-  Widget _playerInfoTile(Player? player, {required bool isLocal}) {
+  Widget _playerInfoTile(AppLocalizations l10n, Player? player, {required bool isLocal}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -212,13 +249,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    player?.nickname ?? (isLocal ? 'Tú' : 'Esperando...'),
+                    player?.nickname ?? (isLocal ? l10n.lobbyYou : l10n.lobbyWaitingOpponent),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (player?.isReady ?? false)
-                  const Icon(Icons.check_circle, size: 16, color: AppColors.success),
+                if (player?.isReady ?? false) const Icon(Icons.check_circle, size: 16, color: AppColors.success),
               ],
             ),
           ],
@@ -228,7 +264,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   void _showGlobalHistoryModal(BuildContext context) {
-    // We get a direct read of the provider to emit the request without triggering a build
     final lobby = context.read<LobbyProvider>();
     lobby.requestGlobalHistory();
 
@@ -239,17 +274,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (BottomSheetContext) {
+      builder: (_) {
         return DraggableScrollableSheet(
           expand: false,
           initialChildSize: 0.6,
           maxChildSize: 0.9,
           minChildSize: 0.4,
           builder: (context, scrollController) {
-            // Watch the provider inside the builder to ensure the modal updates
-            // when the globalHistory list changes via WebSockets.
             final modalLobby = context.watch<LobbyProvider>();
             final history = modalLobby.globalHistory;
+            final sheetL10n = AppLocalizations.of(context)!;
 
             return Column(
               children: [
@@ -258,10 +292,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: AppColors.border)),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      'HISTORIAL REGIONAL',
-                      style: TextStyle(
+                      sheetL10n.lobbyRegionalHistory,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 2.0,
@@ -273,10 +307,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 const SizedBox(height: 8),
                 Expanded(
                   child: history.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
-                            'No hay batallas recientes.',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            sheetL10n.lobbyNoRecentBattles,
+                            style: const TextStyle(color: AppColors.textSecondary),
                           ),
                         )
                       : ListView.builder(
@@ -294,9 +328,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 color: AppColors.panel,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isInProgress
-                                      ? AppColors.arenaBlue.withOpacity(0.5)
-                                      : AppColors.border,
+                                  color: isInProgress ? AppColors.arenaBlue.withOpacity(0.5) : AppColors.border,
                                   width: isInProgress ? 2 : 1,
                                 ),
                               ),
@@ -315,7 +347,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(
-                                          isInProgress ? 'EN CURSO' : 'TERMINADA',
+                                          isInProgress ? sheetL10n.lobbyStatusInProgress : sheetL10n.lobbyStatusFinished,
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
@@ -324,7 +356,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                         ),
                                       ),
                                       Text(
-                                        'Hace ${_formatTimeAgo(entry.createdAt)}',
+                                        _formatTimeAgo(sheetL10n, entry.createdAt),
                                         style: const TextStyle(
                                           fontSize: 11,
                                           color: AppColors.textSecondary,
@@ -344,9 +376,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 12),
-                                        child: Text('VS', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        child: Text(
+                                          sheetL10n.vs,
+                                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                                        ),
                                       ),
                                       Expanded(
                                         child: Text(
@@ -372,7 +407,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                           const Icon(Icons.emoji_events, color: AppColors.success, size: 16),
                                           const SizedBox(width: 8),
                                           Text(
-                                            'Ganador: ${entry.winnerName}',
+                                            sheetL10n.lobbyWinner(entry.winnerName!),
                                             style: const TextStyle(
                                               color: AppColors.success,
                                               fontWeight: FontWeight.bold,
@@ -395,18 +430,5 @@ class _LobbyScreenState extends State<LobbyScreen> {
         );
       },
     );
-  }
-
-  String _formatTimeAgo(DateTime date) {
-    final diff = DateTime.now().difference(date);
-    if (diff.inSeconds < 60) {
-      return 'unos segundos';
-    } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m';
-    } else if (diff.inHours < 24) {
-      return '${diff.inHours}h';
-    } else {
-      return '${diff.inDays}d';
-    }
   }
 }

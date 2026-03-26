@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLobby } from '../../../core/context/LobbyContext';
 import { Server, User, ArrowRight, Loader2, CheckCircle2, XCircle, History } from 'lucide-react';
 import { Globe } from '../../../shared/components/magicui/globe';
@@ -17,8 +18,9 @@ export function LoginScreen() {
     const [isNicknameVerified, setIsNicknameVerified] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
 
+    const { t } = useTranslation('login');
     const navigate = useNavigate();
-    const { connectAndJoin, isConnected, joinError, clearJoinError } = useLobby();
+    const { connectAndJoin, isConnected, joinError, clearJoinError, connectionError, clearConnectionError } = useLobby();
     const { validateServer, isValid, isChecking, error: serverError, metadata, setIsValid } = useServerValidation();
 
     useEffect(() => {
@@ -65,14 +67,14 @@ export function LoginScreen() {
                 `/api/players/check?nickname=${encodeURIComponent(nickname.trim())}`
             );
             if (!res.data.available) {
-                setNicknameError(res.data.message || 'Este apodo ya está en uso.');
+                setNicknameError(res.data.message || t('nicknameInUse'));
                 setIsNicknameVerified(false);
             } else {
                 setIsNicknameVerified(true);
             }
         } catch {
-            // If the check fails (server down etc.) we allow the attempt
-            setIsNicknameVerified(true); // Optimistic fallback if server checking endpoint fails but main socket might work
+            setIsNicknameVerified(false);
+            setNicknameError(t('serverCheckFailed'));
         } finally {
             setIsCheckingNickname(false);
         }
@@ -85,12 +87,12 @@ export function LoginScreen() {
         console.log('[LoginScreen] Submit pulsado. Validando antes de conectar...');
 
         if (!isValid) {
-            setFormError('No puedes ingresar hasta configurar un servidor válido.');
+            setFormError(t('invalidServerError'));
             return;
         }
 
         if (!nickname.trim() || nickname.trim().length <= 3) {
-            setFormError('El apodo debe tener más de 3 caracteres.');
+            setFormError(t('nicknameTooShort'));
             return;
         }
 
@@ -107,12 +109,14 @@ export function LoginScreen() {
                 `/api/players/check?nickname=${encodeURIComponent(nickname.trim())}`
             );
             if (!res.data.available) {
-                setNicknameError(res.data.message || 'Este apodo ya está en uso.');
+                setNicknameError(res.data.message || t('nicknameInUse'));
                 setIsCheckingNickname(false);
                 return;
             }
         } catch {
-            // Ignorar el error si el servidor está caído (se manejará en la conexión socket)
+            setNicknameError(t('serverCheckFailed'));
+            setIsCheckingNickname(false);
+            return;
         }
         setIsCheckingNickname(false);
 
@@ -120,7 +124,7 @@ export function LoginScreen() {
         console.log('[LoginScreen] Todo correcto, conectando...', { nickname: nickname.trim(), serverUrl: serverUrl.trim() });
         connectAndJoin(nickname.trim(), serverUrl.trim());
     };
-    const currentError = formError || serverError || joinError || nicknameError;
+    const currentError = formError || serverError || joinError || nicknameError || connectionError;
 
     // Determine Status Dot Color
     let statusDotClass = "bg-muted-foreground/40"; // disconnected/unknown
@@ -154,12 +158,12 @@ export function LoginScreen() {
                 <div className="flex flex-col items-center mb-8 mt-6">
                     <div className="w-40 h-40 mb-6 relative flex items-center justify-center">
                         <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse"></div>
-                        <img src={logo} alt="Pokemon Stadium Lite Logo" className="w-full h-full object-contain relative z-10 drop-shadow-2xl" />
+                        <img src={logo} alt={t('logoAlt')} className="w-full h-full object-contain relative z-10 drop-shadow-2xl" />
                     </div>
 
-                    <h2 className="text-3xl font-bold mb-3 tracking-tight text-white text-center">Pokémon Stadium Lite</h2>
+                    <h2 className="text-3xl font-bold mb-3 tracking-tight text-white text-center">{t('title')}</h2>
                     <p className="text-sm text-muted-foreground text-center max-w-[280px]">
-                        Configura tu conexión para entrar a la arena y retar a otros entrenadores.
+                        {t('intro')}
                     </p>
                 </div>
 
@@ -171,7 +175,7 @@ export function LoginScreen() {
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
                                 <Server className="w-3.5 h-3.5 text-primary" />
-                                Conexión al Servidor
+                                {t('serverLabel')}
                             </label>
                             <div className="relative">
                                 <input
@@ -180,7 +184,8 @@ export function LoginScreen() {
                                     onChange={(e) => {
                                         setServerUrl(e.target.value);
                                         if (isValid) setIsValid(false);
-                                        if (formError === 'Has modificado la URL. Haz click fuera del texto para validarla nuevamente.' || formError === 'No puedes ingresar hasta configurar un servidor válido.') setFormError('');
+                                        if (formError === t('invalidServerError')) setFormError('');
+                                        if (connectionError) clearConnectionError();
                                     }}
                                     onBlur={handleBlur}
                                     className="w-full h-12 px-4 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium"
@@ -194,12 +199,12 @@ export function LoginScreen() {
                                 {isChecking ? (
                                     <div className="flex items-center gap-2 text-xs text-yellow-500 font-medium animate-pulse">
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        <span>Conectando...</span>
+                                        <span>{t('connecting')}</span>
                                     </div>
                                 ) : isValid && metadata ? (
                                     <div className="flex w-full bg-green-500/10 px-4 py-3 rounded-xl border border-green-500/20">
                                         <div className="flex items-center gap-3 text-[11px] font-medium text-green-500 w-full">
-                                            <span className="flex items-center gap-1 font-bold whitespace-nowrap"><CheckCircle2 className="w-3.5 h-3.5" /> En línea</span>
+                                            <span className="flex items-center gap-1 font-bold whitespace-nowrap"><CheckCircle2 className="w-3.5 h-3.5" /> {t('online')}</span>
                                             <span className="text-green-500/50 shrink-0">|</span>
                                             <div className="flex flex-col gap-0.5 w-full">
                                                 <span className="truncate max-w-[180px] xs:max-w-[220px] sm:max-w-[280px]">{metadata.serverName}</span>
@@ -214,7 +219,7 @@ export function LoginScreen() {
                                 ) : serverError && !isChecking && serverUrl ? (
                                     <div className="flex items-center gap-2 text-[11px] text-red-500 font-medium bg-red-500/10 p-2 rounded-lg border border-red-500/20">
                                         <XCircle className="w-3.5 h-3.5" />
-                                        <span>Desconectado</span>
+                                        <span>{t('disconnected')}</span>
                                     </div>
                                 ) : null}
                             </div>
@@ -226,7 +231,7 @@ export function LoginScreen() {
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider text-[11px]">
                                 <User className="w-3.5 h-3.5 text-primary" />
-                                Nickname de entrenador
+                                {t('nicknameLabel')}
                             </label>
                             <div className="relative">
                                 <input
@@ -238,6 +243,7 @@ export function LoginScreen() {
                                             setNickname(val);
                                             setIsNicknameVerified(false);
                                             if (joinError) clearJoinError();
+                                            if (connectionError) clearConnectionError();
                                             if (nicknameError) setNicknameError('');
                                         }
                                     }}
@@ -247,7 +253,7 @@ export function LoginScreen() {
                                         ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
                                         : 'border-border focus:border-primary focus:ring-primary'
                                         }`}
-                                    placeholder="Ej: ash-1"
+                                    placeholder={t('nicknamePlaceholder')}
                                 />
                                 {isCheckingNickname && (
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -285,7 +291,7 @@ export function LoginScreen() {
                         : 'bg-muted text-muted-foreground cursor-not-allowed border border-border/50'
                         }`}
                 >
-                    {(isChecking || isCheckingNickname) ? 'VALIDANDO...' : 'CONECTAR AL ESTADIO'}
+                    {(isChecking || isCheckingNickname) ? t('validating') : t('connectButton')}
                     {!(isChecking || isCheckingNickname) && <ArrowRight className="w-5 h-5" />}
                 </button>
 
@@ -297,14 +303,14 @@ export function LoginScreen() {
                         className="flex items-center gap-2 text-xs text-muted-foreground hover:text-white transition-colors mb-4 bg-[#1F2937]/30 hover:bg-[#1F2937] px-4 py-2 rounded-full border border-[#1F2937]"
                     >
                         <History className="w-4 h-4" />
-                        Ver historial de batallas
+                        {t('viewHistory')}
                     </button>
                     <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground font-medium mb-2">
-                        <span>Estado del Servidor</span>
+                        <span>{t('serverStatus')}</span>
                         <span className={`w-2 h-2 rounded-full ${isValid ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-muted-foreground/40'}`} />
-                        <a href="#" className="hover:text-foreground transition-colors ml-2">Ayuda</a>
+                        <a href="#" className="hover:text-foreground transition-colors ml-2">{t('help')}</a>
                     </div>
-                    <span className="text-[10px] text-muted-foreground/30 font-medium">Pokémon Stadium Lite v{import.meta.env.VITE_APP_VERSION}</span>
+                    <span className="text-[10px] text-muted-foreground/30 font-medium">{t('version', { version: import.meta.env.VITE_APP_VERSION })}</span>
                 </div>
 
             </div>

@@ -1,4 +1,5 @@
 import type { PokemonBase } from '../../../core/types/models';
+import { useTranslation } from 'react-i18next';
 import { Heart, Sword, Shield, Zap } from 'lucide-react';
 import { BorderBeam } from '../magicui/border-beam';
 
@@ -34,6 +35,7 @@ const getTypeColorClasses = (type: string) => {
 };
 
 export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) {
+    const { t } = useTranslation('common');
     // Backend payload resiliency (handling both mapped and raw API payloads)
     const types = (pokemon as any).types || (pokemon as any).type || [];
     const spriteUrl = pokemon.spriteUrl || (pokemon as any).sprite || '';
@@ -96,7 +98,7 @@ export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) 
                 <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-green-500/10 transition-all`}>
                     <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
                         <Heart className="w-3 h-3 text-green-500" />
-                        <span className="font-bold text-slate-400">PS</span>
+                        <span className="font-bold text-slate-400">{t('stats.hp')}</span>
                     </div>
                     <span className="font-black text-green-400">{maxHp}</span>
                 </div>
@@ -105,7 +107,7 @@ export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) 
                 <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-red-500/10 transition-all`}>
                     <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
                         <Sword className="w-3 h-3 text-red-500" />
-                        <span className="font-bold text-slate-400">ATQ</span>
+                        <span className="font-bold text-slate-400">{t('stats.attack')}</span>
                     </div>
                     <span className="font-black text-red-400">{attack}</span>
                 </div>
@@ -114,7 +116,7 @@ export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) 
                 <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-blue-500/10 transition-all`}>
                     <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
                         <Shield className="w-3 h-3 text-blue-500" />
-                        <span className="font-bold text-slate-400">DEF</span>
+                        <span className="font-bold text-slate-400">{t('stats.defense')}</span>
                     </div>
                     <span className="font-black text-blue-400">{defense}</span>
                 </div>
@@ -123,7 +125,7 @@ export function PokemonCard({ pokemon, compact, isDefeated }: PokemonCardProps) 
                 <div className={`flex items-center justify-between bg-[#131B2C] rounded-lg ${compact ? 'px-1.5 py-1' : 'px-2 py-1.5'} cursor-default group-hover:bg-[#1A233A] border border-transparent group-hover:border-yellow-400/10 transition-all`}>
                     <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
                         <Zap className="w-3 h-3 text-yellow-400" />
-                        <span className="font-bold text-slate-400">VEL</span>
+                        <span className="font-bold text-slate-400">{t('stats.speed')}</span>
                     </div>
                     <span className="font-black text-yellow-400">{speed}</span>
                 </div>

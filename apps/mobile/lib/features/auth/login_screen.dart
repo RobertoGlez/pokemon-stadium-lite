@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/lobby_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _urlController.text = 'https://pokemon-server-api-433891638584.us-central1.run.app'; // Default
+    _urlController.text = 'https://pokemon-server-api-433891638584.us-central1.run.app';
   }
 
   @override
@@ -43,8 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final lobbyProvider = context.watch<LobbyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
-    // Listen to connection and navigate
     if (lobbyProvider.isConnected) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.go('/lobby');
@@ -54,7 +55,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Grid Pattern (Simulated with CustomPaint or simplified)
           Positioned.fill(
             child: Opacity(
               opacity: 0.1,
@@ -66,17 +66,15 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.fromLTRB(24.0, 56.0, 24.0, 24.0),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo Placeholder / Placeholder for Logo img
                       Container(
                         width: 120,
                         height: 120,
@@ -91,10 +89,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
-                      const Text(
-                        'Pokémon Stadium Lite',
-                        style: TextStyle(
+                      Text(
+                        l10n.appTitle,
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
@@ -102,24 +99,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Ingresa a la arena y reta a otros entrenadores.',
-                        style: TextStyle(
+                      Text(
+                        l10n.loginIntro,
+                        style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 40),
-                      
-                      // Server URL Input
                       TextFormField(
                         controller: _urlController,
-                        decoration: const InputDecoration(
-                          hintText: 'https://pokemon-server-api-433891638584.us-central1.run.app',
-                          labelText: 'CONEXIÓN AL SERVIDOR',
+                        decoration: InputDecoration(
+                          hintText: l10n.loginServerHint,
+                          labelText: l10n.loginServerLabel,
                           floatingLabelBehavior: FloatingLabelBehavior.always,
-                          labelStyle: TextStyle(
+                          labelStyle: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.0,
@@ -127,21 +122,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Ingresa una URL válida';
+                            return l10n.loginUrlRequired;
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 20),
-                      
-                      // Nickname Input
                       TextFormField(
                         controller: _nicknameController,
-                        decoration: const InputDecoration(
-                          hintText: 'Ej: ash-1',
-                          labelText: 'NICKNAME DE ENTRENADOR',
+                        decoration: InputDecoration(
+                          hintText: l10n.loginNicknameHint,
+                          labelText: l10n.loginNicknameLabel,
                           floatingLabelBehavior: FloatingLabelBehavior.always,
-                          labelStyle: TextStyle(
+                          labelStyle: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.0,
@@ -149,16 +142,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Ingresa un nickname';
+                            return l10n.loginNicknameRequired;
                           }
                           if (value.length <= 3) {
-                            return 'Mínimo 4 caracteres';
+                            return l10n.loginNicknameMinLength;
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 32),
-                      
                       if (lobbyProvider.joinError != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 20),
@@ -167,27 +159,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: const TextStyle(color: AppColors.danger, fontSize: 13),
                           ),
                         ),
-                      
-                      // Submit Button
                       ElevatedButton(
                         onPressed: _handleLogin,
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('CONECTAR AL ESTADIO'),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, size: 20),
+                            Text(l10n.loginConnectButton),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward, size: 20),
                           ],
                         ),
                       ),
-                      
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            'Estado del Servidor',
-                            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          Text(
+                            l10n.loginServerStatus,
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                           ),
                           const SizedBox(width: 8),
                           Container(
@@ -196,13 +185,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: lobbyProvider.isConnected ? AppColors.success : Colors.grey.withOpacity(0.4),
-                              boxShadow: lobbyProvider.isConnected ? [
-                                BoxShadow(
-                                  color: AppColors.success.withOpacity(0.6),
-                                  blurRadius: 4,
-                                  spreadRadius: 1,
-                                )
-                              ] : null,
+                              boxShadow: lobbyProvider.isConnected
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.success.withOpacity(0.6),
+                                        blurRadius: 4,
+                                        spreadRadius: 1,
+                                      )
+                                    ]
+                                  : null,
                             ),
                           ),
                         ],

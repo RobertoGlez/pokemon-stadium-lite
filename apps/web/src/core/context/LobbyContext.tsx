@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
+import i18n from '../../i18n';
 import type { Player, LobbyStatusPayload, BattleLogEntry } from '../types/models';
 
 interface LobbyContextValue {
@@ -19,6 +20,10 @@ interface LobbyContextValue {
     isRequestingTeam: boolean;
     joinError: string | null;
     clearJoinError: () => void;
+    connectionError: string | null;
+    clearConnectionError: () => void;
+    socketActionError: string | null;
+    clearSocketActionError: () => void;
     battleLog: BattleLogEntry[];
     winnerId: string | null;
 }
@@ -39,10 +44,14 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [lastDamageEvent, setLastDamageEvent] = useState<{ defenderId: string; damage: number; timestamp: number } | null>(null);
     const [isRequestingTeam, setIsRequestingTeam] = useState(false);
     const [joinError, setJoinError] = useState<string | null>(null);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
+    const [socketActionError, setSocketActionError] = useState<string | null>(null);
     const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
     const [winnerId, setWinnerId] = useState<string | null>(null);
 
     const clearJoinError = () => setJoinError(null);
+    const clearConnectionError = () => setConnectionError(null);
+    const clearSocketActionError = () => setSocketActionError(null);
 
     const appendLog = (type: BattleLogEntry['type'], message: string) => {
         setBattleLog(prev => [...prev, {
@@ -93,6 +102,10 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             socketRef.current = null;
         }
 
+        setJoinError(null);
+        setConnectionError(null);
+        setSocketActionError(null);
+
         // Use the provided URL, or fall back to localStorage, or default
         const socketUrl = serverUrl || getBackendUrl();
 
@@ -111,9 +124,17 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         newSocket.on('connect', () => {
             setIsConnected(true);
+            setConnectionError(null);
             setLocalNickname(nickname);
             localNicknameRef.current = nickname;
             newSocket.emit('join_lobby', nickname);
+        });
+
+        newSocket.on('connect_error', (err: unknown) => {
+            setIsConnected(false);
+            const detail = err instanceof Error ? err.message : String(err ?? '');
+            const reason = detail ? ` ${detail}` : '';
+            setConnectionError(`${i18n.t('login:connectionFailed')}${reason}`);
         });
 
         newSocket.on('disconnect', () => {
@@ -138,7 +159,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         newSocket.on('battle_start', (data: { currentTurnPlayerId: string }) => {
             setLobbyStatus('battling'); // Ensure state reflects battle locally
             setCurrentTurnPlayerId(data.currentTurnPlayerId);
-            appendLog('info', '¡La batalla ha comenzado!');
+            appendLog('info', i18n.t('common:battleLog.battleStarted'));
         });
 
         newSocket.on('turn_result', (data: any) => {
@@ -150,7 +171,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 const defenderActive = defender?.team?.find(p => !p.isDefeated);
 
                 if (attackerActive && defenderActive) {
-                    appendLog('damage', `${attackerActive.name} atacó a ${defenderActive.name} por ${data.damage} de daño.`);
+                    appendLog('damage', i18n.t('common:battleLog.attackLog', { attacker: attackerActive.name, defender: defenderActive.name, damage: data.damage }));
                 }
 
                 setLastDamageEvent({
@@ -160,9 +181,9 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 });
 
                 if (data.pokemonFainted && defenderActive) {
-                    appendLog('defeat', `¡${defenderActive.name} fue derrotado!`);
+                    appendLog('defeat', i18n.t('common:battleLog.defeated', { pokemon: defenderActive.name }));
                     if (data.nextDefenderPokemon) {
-                        appendLog('switch', `${defender?.nickname} envía a ${data.nextDefenderPokemon.name}.`);
+                        appendLog('switch', i18n.t('common:battleLog.switchPokemon', { nickname: defender?.nickname, pokemon: data.nextDefenderPokemon.name }));
                     }
                 }
             }
@@ -219,7 +240,7 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     setWinnerId(data.winnerId);
                 }
                 if (data?.winnerName) {
-                    appendLog('winner', `¡${data.winnerName} ha ganado la batalla!`);
+                    appendLog('winner', i18n.t('common:battleLog.winnerLog', { winner: data.winnerName }));
                 }
             }, 1200);
         });
@@ -232,6 +253,19 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setLocalNickname('');
             socketRef.current = null;
             setSocket(null);
+        });
+
+        newSocket.on('assign_error', (data: { code?: string; message?: string }) => {
+            setIsRequestingTeam(false);
+            setSocketActionError(typeof data?.message === 'string' ? data.message : i18n.t('lobby:assignTeamError'));
+        });
+
+        newSocket.on('ready_error', (data: { message?: string }) => {
+            setSocketActionError(typeof data?.message === 'string' ? data.message : i18n.t('lobby:readyError'));
+        });
+
+        newSocket.on('attack_error', (data: { message?: string }) => {
+            setSocketActionError(typeof data?.message === 'string' ? data.message : i18n.t('lobby:attackError'));
         });
 
         setSocket(newSocket);
@@ -251,6 +285,8 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setCurrentTurnPlayerId(null);
         setBattleLog([]);
         setWinnerId(null);
+        setConnectionError(null);
+        setSocketActionError(null);
     };
 
     useEffect(() => {
@@ -277,6 +313,10 @@ export const LobbyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         isRequestingTeam,
         joinError,
         clearJoinError,
+        connectionError,
+        clearConnectionError,
+        socketActionError,
+        clearSocketActionError,
         battleLog,
         winnerId
     };

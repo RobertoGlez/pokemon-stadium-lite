@@ -8,15 +8,28 @@ class SocketClient {
 
   io.Socket? _socket;
   final _logger = Logger();
+  void Function(String message)? _onConnectionError;
+  bool _connectionFailureReported = false;
 
   io.Socket? get socket => _socket;
   bool get isConnected => _socket?.connected ?? false;
 
-  void connect(String url) {
+  void _emitConnectionFailure(dynamic data) {
+    if (_connectionFailureReported) return;
+    _connectionFailureReported = true;
+    final detail = data?.toString();
+    final msg = (detail == null || detail.isEmpty) ? 'connect_error' : detail;
+    _onConnectionError?.call(msg);
+  }
+
+  void connect(String url, {void Function(String message)? onConnectionError}) {
     if (_socket != null) {
       _socket!.disconnect();
       _socket!.dispose();
     }
+
+    _connectionFailureReported = false;
+    _onConnectionError = onConnectionError;
 
     _logger.i('Connecting to Socket server at: $url');
 
@@ -32,15 +45,27 @@ class SocketClient {
 
     _socket!.connect();
 
-    _socket!.onConnect((_) => _logger.i('Connected to server'));
+    _socket!.onConnect((_) {
+      _connectionFailureReported = false;
+      _logger.i('Connected to server');
+    });
     _socket!.onDisconnect((_) => _logger.w('Disconnected from server'));
-    _socket!.onConnectError((data) => _logger.e('Connect Error: $data'));
-    _socket!.onError((data) => _logger.e('Socket Error: $data'));
+    _socket!.onConnectError((data) {
+      _logger.e('Connect Error: $data');
+      _emitConnectionFailure(data);
+    });
+    _socket!.onError((data) {
+      _logger.e('Socket Error: $data');
+      if (_socket?.connected != true) {
+        _emitConnectionFailure(data);
+      }
+    });
   }
 
   void disconnect() {
     _socket?.disconnect();
     _socket = null;
+    _onConnectionError = null;
   }
 
   void emit(String event, [dynamic data]) {

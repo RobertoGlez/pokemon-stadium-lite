@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import '../models/player.dart';
 import '../models/pokemon.dart';
 import '../models/battle.dart';
@@ -22,7 +23,16 @@ class BattleLogEntry {
 
 class LobbyProvider extends ChangeNotifier {
   final SocketClient _socketClient = SocketClient();
-  
+
+  Locale _locale = const Locale('es');
+
+  void updateLocale(Locale locale) {
+    if (_locale.languageCode == locale.languageCode) return;
+    _locale = locale;
+  }
+
+  AppLocalizations get _l10n => lookupAppLocalizations(_locale);
+
   bool _isConnected = false;
   String _localNickname = '';
   LobbyStatus _lobbyStatus = LobbyStatus.idle;
@@ -33,6 +43,7 @@ class LobbyProvider extends ChangeNotifier {
   List<GlobalHistoryEntry> _globalHistory = [];
   bool _isRequestingTeam = false;
   String? _joinError;
+  String? _socketActionError;
 
   // Getters
   bool get isConnected => _isConnected;
@@ -44,7 +55,16 @@ class LobbyProvider extends ChangeNotifier {
   List<GlobalHistoryEntry> get globalHistory => _globalHistory;
   bool get isRequestingTeam => _isRequestingTeam;
   String? get joinError => _joinError;
+  String? get socketActionError => _socketActionError;
   String? get winnerId => _winnerId;
+
+  String _messageFromSocketPayload(dynamic data) {
+    if (data is Map && data['message'] is String) {
+      final m = data['message'] as String;
+      if (m.isNotEmpty) return m;
+    }
+    return _l10n.socketActionFallback;
+  }
 
   Player? get localPlayer {
     try {
@@ -66,8 +86,20 @@ class LobbyProvider extends ChangeNotifier {
 
   void connectAndJoin(String url, String nickname) {
     _localNickname = nickname;
-    _socketClient.connect(url);
-    
+    _joinError = null;
+    _socketActionError = null;
+
+    _socketClient.connect(
+      url,
+      onConnectionError: (detail) {
+        final shortDetail = detail == 'connect_error' || detail == 'socket_error';
+        _joinError = shortDetail ? _l10n.connectionFailed : '${_l10n.connectionFailed} ($detail)';
+        _isConnected = false;
+        _socketClient.disconnect();
+        notifyListeners();
+      },
+    );
+
     _socketClient.on('connect', (_) {
       _isConnected = true;
       _socketClient.emit('join_lobby', nickname);
@@ -125,14 +157,31 @@ class LobbyProvider extends ChangeNotifier {
       final payload = BattleEndPayload.fromJson(data);
       _lobbyStatus = LobbyStatus.finished;
       _winnerId = payload.winnerId;
-      _appendLog('winner', '¡${payload.winnerName} ha ganado la batalla!');
+      _appendLog('winner', _l10n.battleLogWinner(payload.winnerName));
       notifyListeners();
     });
 
     _socketClient.on('join_error', (data) {
-      _joinError = data['message'] ?? 'Error al unirse';
+      final msg = data is Map ? data['message'] : null;
+      _joinError = msg is String ? msg : _l10n.joinErrorDefault;
       _socketClient.disconnect();
       _isConnected = false;
+      notifyListeners();
+    });
+
+    _socketClient.on('assign_error', (data) {
+      _isRequestingTeam = false;
+      _socketActionError = _messageFromSocketPayload(data);
+      notifyListeners();
+    });
+
+    _socketClient.on('ready_error', (data) {
+      _socketActionError = _messageFromSocketPayload(data);
+      notifyListeners();
+    });
+
+    _socketClient.on('attack_error', (data) {
+      _socketActionError = _messageFromSocketPayload(data);
       notifyListeners();
     });
 
@@ -154,13 +203,19 @@ class LobbyProvider extends ChangeNotifier {
       final defenderActive = defender.team?.where((p) => !p.isDefeated).firstOrNull;
 
       if (attackerActive != null && defenderActive != null) {
-        _appendLog('damage', '${attackerActive.name} atacó a ${defenderActive.name} por ${result.damage} de daño.');
+        _appendLog(
+          'damage',
+          _l10n.battleLogAttack(attackerActive.name, defenderActive.name, result.damage),
+        );
       }
 
       if (result.pokemonFainted && defenderActive != null) {
-        _appendLog('defeat', '¡${defenderActive.name} fue derrotado!');
+        _appendLog('defeat', _l10n.battleLogDefeated(defenderActive.name));
         if (result.nextDefenderPokemon != null) {
-          _appendLog('switch', '${defender.nickname} envía a ${result.nextDefenderPokemon!.name}.');
+          _appendLog(
+            'switch',
+            _l10n.battleLogSwitch(defender.nickname, result.nextDefenderPokemon!.name),
+          );
         }
       }
     }
@@ -258,6 +313,11 @@ class LobbyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearSocketActionError() {
+    _socketActionError = null;
+    notifyListeners();
+  }
+
   void disconnect() {
     _socketClient.disconnect();
     _resetState();
@@ -271,5 +331,6 @@ class LobbyProvider extends ChangeNotifier {
     _currentTurnPlayerId = null;
     _battleLog = [];
     _winnerId = null;
+    _socketActionError = null;
   }
 }

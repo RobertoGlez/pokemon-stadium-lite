@@ -1,0 +1,12 @@
+{
+  "victory": "Victory!",
+  "defeat": "Defeat",
+  "victoryMessage": "Congratulations, {{nickname}}! Your strategy was flawless.",
+  "defeatMessage": "You fought valiantly, but {{nickname}} has prevailed.",
+  "arenaChampion": "Arena Champion",
+  "pokemonStanding": "{{count}}/3 Pokémon standing",
+  "survivors": "Survivors",
+  "damageDealt": "Damage Dealt",
+  "totalTurns": "Total Turns",
+  "playAgain": "PLAY AGAIN"
+}

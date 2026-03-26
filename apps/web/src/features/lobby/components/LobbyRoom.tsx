@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLobby } from '../../../core/context/LobbyContext';
 import { Globe } from '../../../shared/components/magicui/globe';
 import { Loader2, ArrowLeft, RefreshCw, CheckSquare, Clock, CircleCheck, Users } from 'lucide-react';
 import { PokemonCard } from '../../../shared/components/pokemon/PokemonCard';
 
 export function LobbyRoom() {
+    const { t } = useTranslation('lobby');
     const navigate = useNavigate();
-    const { players, localNickname, disconnect, isConnected, requestTeam, emitReady, lobbyStatus, isRequestingTeam } = useLobby();
+    const { players, localNickname, disconnect, isConnected, requestTeam, emitReady, lobbyStatus, isRequestingTeam, socketActionError, clearSocketActionError } = useLobby();
     const waitingForOpponent = players.length < 2;
 
     const localPlayer = players.find(p => p.nickname === localNickname);
@@ -51,6 +53,19 @@ export function LobbyRoom() {
                 </button>
             </div>
 
+            {socketActionError && (
+                <div className="z-20 w-full max-w-3xl mb-4 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    <span className="flex-1">{socketActionError}</span>
+                    <button
+                        type="button"
+                        onClick={() => clearSocketActionError()}
+                        className="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold hover:bg-destructive/20"
+                    >
+                        OK
+                    </button>
+                </div>
+            )}
+
             {/* Main Content */}
             <div className="z-10 flex flex-col items-center w-full max-w-3xl gap-8">
 
@@ -62,9 +77,9 @@ export function LobbyRoom() {
                             ? 'bg-primary animate-pulse shadow-[0_0_5px_rgba(37,99,235,0.8)]'
                             : 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]'}`}
                         />
-                        {waitingForOpponent ? 'Lobby Activo' : '¡Oponente Encontrado!'}
+                        {waitingForOpponent ? t('statusActive') : t('opponentFound')}
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white">Battle Lobby</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
                 </div>
 
                 {/* Player Cards Row */}
@@ -78,7 +93,7 @@ export function LobbyRoom() {
                         <div className="flex-1 min-w-0">
                             <p className="font-bold text-white truncate">{localNickname}</p>
                             <p className="text-xs text-[#9CA3AF] mt-0.5">
-                                {hasTeam ? `${localPlayer?.team?.length} Pokémon asignados` : 'Sin equipo aún'}
+                                {hasTeam ? t('pokemonAssigned', { count: localPlayer?.team?.length }) : t('noTeamYet')}
                             </p>
                         </div>
                         <CircleCheck className={`w-5 h-5 shrink-0 transition-colors ${isReadyLocally ? 'text-green-500' : 'text-[#1F2937]'}`} />
@@ -99,8 +114,8 @@ export function LobbyRoom() {
                                 <p className="font-bold text-white truncate">{opponent.nickname}</p>
                                 <p className="text-xs text-[#9CA3AF] mt-0.5">
                                     {opponent.team && opponent.team.length > 0
-                                        ? `${opponent.team.length} Pokémon asignados`
-                                        : 'Sin equipo aún'}
+                                        ? t('pokemonAssigned', { count: opponent.team.length })
+                                        : t('noTeamYet')}
                                 </p>
                             </div>
                             <CircleCheck className={`w-5 h-5 shrink-0 transition-colors ${opponent.isReady ? 'text-green-500' : 'text-[#1F2937]'}`} />
@@ -112,7 +127,7 @@ export function LobbyRoom() {
                                 <Users className="w-5 h-5 text-[#9CA3AF]" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-[#9CA3AF] font-medium text-sm">Esperando oponente...</p>
+                                <p className="text-[#9CA3AF] font-medium text-sm">{t('waitingOpponent')}</p>
                             </div>
                             <Clock className="w-5 h-5 text-[#9CA3AF] shrink-0 animate-pulse" />
                         </div>
@@ -134,18 +149,18 @@ export function LobbyRoom() {
                             {isRequestingTeam ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Asignando...
+                                    {t('assigning')}
                                 </>
                             ) : (
                                 <>
                                     <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                                    Generar Equipo
+                                    {t('generateTeam')}
                                 </>
                             )}
                         </button>
                     ) : (
                         <div className="flex flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-6 duration-500 w-full">
-                            <span className="text-xs font-semibold tracking-widest uppercase text-[#9CA3AF]">Tu Equipo Asignado</span>
+                            <span className="text-xs font-semibold tracking-widest uppercase text-[#9CA3AF]">{t('yourAssignedTeam')}</span>
                             <div className="flex flex-wrap items-center justify-center gap-4">
                                 {localPlayer?.team?.map((pokemon) => (
                                     <PokemonCard key={pokemon.id} pokemon={pokemon} />
@@ -167,7 +182,7 @@ export function LobbyRoom() {
                                 )}
                                 <CheckSquare className={`w-5 h-5 relative z-10 ${!isReadyLocally && !waitingForOpponent ? 'group-hover:scale-110 transition-transform duration-300' : ''}`} />
                                 <span className="relative z-10">
-                                    {isReadyLocally ? 'ESPERANDO AL OPONENTE...' : 'LISTO PARA LA BATALLA'}
+                                    {isReadyLocally ? t('waitingForOpponent') : t('readyForBattle')}
                                 </span>
                             </button>
                         </div>
